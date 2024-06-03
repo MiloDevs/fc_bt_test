@@ -1,41 +1,68 @@
-// SettingsPage.js
 import React, { useEffect } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {Octicons} from '@expo/vector-icons';
-import { FontAwesome6 } from '@expo/vector-icons';
 import { useBluetooth } from 'rn-bluetooth-classic';
-//import { useBluetooth } from '../Components/BluetoothContext';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
 const SettingsPage = ({ navigation }) => {
-  const { scanDevices, devices, connectToDevice } = useBluetooth();
+  const { scanDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
   const [lookingForDevices, setLookingForDevices] = React.useState(false);
+  const [connecting, setConnecting] = React.useState(false);
 
   useEffect(() => {
-    try {
-      scanDevices();
-    } catch (e) {
-      console.log(e);
-    }
+    const startScan = async () => {
+      try {
+        await scanDevices();
+      } catch (e) {
+        console.log('Error scanning devices:', e);
+      }
+    };
+    startScan();
   }, []);
 
   useEffect(() => {
     console.log('Discovered Devices:', devices);
-  }, [devices]); 
+  }, [devices]);
 
-  const handleConnectToScale = (deviceAddress) => {
+  const handleConnectToScale = async (deviceAddress) => {
+    setConnecting(true);
     console.log('Connecting to device', deviceAddress);
-    connectToDevice(deviceAddress);
+    try {
+      const connected = await connectToDevice(deviceAddress);
+      if (connected) {
+        setConnectedDevice(deviceAddress);
+        console.log('Connected to device', deviceAddress);
+      } else {
+        console.log('Connected to device', deviceAddress);
+      }
+    } catch (e) {
+      console.log('Error connecting to device:', e);
+    } finally {
+      setConnecting(false);
+    }
   };
 
-  const handleConnectToPrinter = () => {
+  const handleConnectToPrinter = async () => {
     if (devices.length > 0) {
-      connectToDevice(devices[0].address);
-      console.log('Connected to printer');
+      const deviceAddress = devices[0].address;
+      setConnecting(true);
+      try {
+        const connected = await connectToDevice(deviceAddress);
+        if (connected) {
+          setConnectedDevice(deviceAddress);
+          console.log('Connected to printer');
+        } else {
+          console.log('Failed to connect to printer');
+        }
+      } catch (e) {
+        console.log('Error connecting to printer:', e);
+      } finally {
+        setConnecting(false);
+      }
     } else {
       console.log('No devices found');
     }
@@ -119,6 +146,12 @@ const styles = StyleSheet.create({
     marginRight: 20,
     fontFamily: 'Poppins-Regular',
   },
+  deviceItem: {
+    padding: 10,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 5,
+    borderRadius: 5,
+  },
   signOutContainer: {
     position: 'absolute',
     bottom: 30,
@@ -144,23 +177,18 @@ const styles = StyleSheet.create({
 
 export default SettingsPage;
 
-
-
-
 // import React, { useEffect } from 'react';
 // import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
-// import AntDesign from "@expo/vector-icons/AntDesign";
+// import AntDesign from '@expo/vector-icons/AntDesign';
 // import { MaterialCommunityIcons } from '@expo/vector-icons';
-// import { FontAwesome6 } from '@expo/vector-icons';
-
-
-
+// import { useBluetooth } from 'rn-bluetooth-classic';
 
 // const screenWidth = Dimensions.get('window').width;
 // const screenHeight = Dimensions.get('window').height;
 
 // const SettingsPage = ({ navigation }) => {
-
+//   const { scanDevices, devices, connectToDevice } = useBluetooth();
+//   const [lookingForDevices, setLookingForDevices] = React.useState(false);
 
 //   useEffect(() => {
 //     try {
@@ -170,29 +198,60 @@ export default SettingsPage;
 //     }
 //   }, []);
 
+//   useEffect(() => {
+//     console.log('Discovered Devices:', devices);
+//   }, [devices]); 
+
 //   const handleConnectToScale = (deviceAddress) => {
+//     console.log('Connecting to device', deviceAddress);
 //     connectToDevice(deviceAddress);
-//     console.log('Connected to device', deviceAddress);
 //   };
 
-
 //   const handleConnectToPrinter = () => {
-//     connectToDevice(devices[0].address);
-//     console.log('devices');
+//     if (devices.length > 0) {
+//       connectToDevice(devices[0].address);
+//       console.log('Connected to printer');
+//     } else {
+//       console.log('No devices found');
+//     }
 //   };
 
 //   const handleSignOut = () => {
-//     // sign out
 //     console.log('Sign Out button pressed');
 //     navigation.navigate('LoginPage');
 //   };
 
 //   return (
 //     <View style={styles.container}>
-//       <TouchableOpacity style={styles.button} onPress={handleConnectToScale}>
+//       <View style={{
+//         width: screenWidth,
+//         alignItems: 'center',
+//       }}>
+//       <TouchableOpacity
+//         style={styles.button}
+//         onPress={() => setLookingForDevices(true)}
+//       >
 //         <Text style={styles.buttonText}>Connect to Scale</Text>
-//         <FontAwesome6 name="weight-scale" size={24} color="black" />
+//         <AntDesign name="scale" size={24} color="black" />
 //       </TouchableOpacity>
+//       {lookingForDevices && (
+//         <View>
+//           <Text style={{ color: "#000000" }}>
+//             {devices[0]?.name || devices[0]?.address || 'No devices found'}
+//           </Text>
+//           <Text>Looking for devices...</Text>
+//           {devices.map((device) => (
+//             <TouchableOpacity
+//               key={device.address}
+//               style={styles.deviceItem}
+//               onPress={() => handleConnectToScale(device.address)}
+//             >
+//               <Text>{device.name || device.address}</Text>
+//             </TouchableOpacity>
+//           ))}
+//         </View>
+//       )}
+//       </View>
 //       <TouchableOpacity style={styles.button} onPress={handleConnectToPrinter}>
 //         <Text style={styles.buttonText}>Connect to Printer</Text>
 //         <AntDesign name="printer" size={24} color="black" />
@@ -233,6 +292,12 @@ export default SettingsPage;
 //     marginRight: 20,
 //     fontFamily: 'Poppins-Regular',
 //   },
+//   deviceItem: {
+//     padding: 10,
+//     backgroundColor: '#F0F0F0',
+//     marginVertical: 5,
+//     borderRadius: 5,
+//   },
 //   signOutContainer: {
 //     position: 'absolute',
 //     bottom: 30,
@@ -257,3 +322,4 @@ export default SettingsPage;
 // });
 
 // export default SettingsPage;
+
