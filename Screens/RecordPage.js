@@ -31,7 +31,7 @@ const RecordPage = () => {
                         // Assuming the format is "weight:xx,stability:xx"
                         const parsedData = parseBluetoothData(decodedString);
                         if (parsedData) {
-                            setWeight(receivedData);
+                            // setWeight(receivedData);
                             setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
                         }
                     }
@@ -133,7 +133,7 @@ const RecordPage = () => {
                     </Text>
                 </View>
                 <View>
-                    <Text style={styles.textWeight}>{weight}</Text>
+                    <Text style={styles.textWeight}>{receivedData}</Text>
                 </View>
             </View>
             <TouchableOpacity style={styles.Button}>
