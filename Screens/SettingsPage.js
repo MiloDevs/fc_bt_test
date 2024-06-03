@@ -3,7 +3,6 @@ import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-nati
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {Octicons} from '@expo/vector-icons';
-import { FontAwesome6 } from '@expo/vector-icons';
 import { useBluetooth } from 'rn-bluetooth-classic';
 
 const screenWidth = Dimensions.get('window').width;
