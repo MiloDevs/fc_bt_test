@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {Octicons} from '@expo/vector-icons';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useBluetooth } from 'rn-bluetooth-classic';
 //import { useBluetooth } from '../Components/BluetoothContext';
@@ -56,7 +57,7 @@ const SettingsPage = ({ navigation }) => {
         onPress={() => setLookingForDevices(true)}
       >
         <Text style={styles.buttonText}>Connect to Scale</Text>
-        <AntDesign name="scale" size={24} color="black" />
+        <Octicons name="meter" size={24} color="black" />
       </TouchableOpacity>
       {lookingForDevices && (
         <View
@@ -85,7 +86,7 @@ const SettingsPage = ({ navigation }) => {
       <View style={styles.signOutContainer}>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>
-          <MaterialCommunityIcons name="logout" size={24} color="red" />
+          <Octicons name="sign-out" size={24} color="red" />
         </TouchableOpacity>
       </View>
     </View>
