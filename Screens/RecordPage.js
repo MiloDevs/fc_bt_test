@@ -15,7 +15,7 @@ const RecordPage = () => {
     const [connectedDevice, setConnectedDevice] = useState(null);
     const [scaleStability, setScaleStability] = useState(null);
     const [weight, setWeight] = useState('N/A');
-
+    
     const { devices, connectToDevice, receivedData, isConnected } = useBluetooth();
 
     useEffect(() => {
@@ -133,7 +133,7 @@ const RecordPage = () => {
                     </Text>
                 </View>
                 <View>
-                    <Text style={styles.textWeight}>{weight}</Text>
+                    <Text style={styles.textWeight}>{receivedData}</Text>
                 </View>
             </View>
             <TouchableOpacity style={styles.Button}>
