@@ -16,7 +16,7 @@ const RecordPage = () => {
     const [scaleStability, setScaleStability] = useState(null);
     const [weight, setWeight] = useState('N/A');
 
-    const { devices, connectToDevice, read, isConnected } = useBluetooth();
+    const { devices, connectToDevice, receivedData, isConnected } = useBluetooth();
 
     useEffect(() => {
         if (connectedDevice) {
@@ -31,7 +31,7 @@ const RecordPage = () => {
                         // Assuming the format is "weight:xx,stability:xx"
                         const parsedData = parseBluetoothData(decodedString);
                         if (parsedData) {
-                            setWeight(parsedData.weight);
+                            setWeight(receivedData);
                             setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
                         }
                     }
