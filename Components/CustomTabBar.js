@@ -1,6 +1,8 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import Octicons from "@expo/vector-icons/Octicons";
+
+
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.tabBar}>
@@ -19,7 +21,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
           }
         };
 
-        const iconName = route.name === "HomePage" ? "home" : "setting";
+        const iconName = route.name === "HomePage" ? "home" : "gear";
 
         return (
           <Pressable
@@ -27,9 +29,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             key={index}
             style={[styles.tabItem, isFocused && styles.focusedTab]}
           >
-            <AntDesign
+            <Octicons
               name={iconName}
-              size={30}
+              size={24}
               color={isFocused ? "black" : "#D9D9D9"}
             />
           </Pressable>

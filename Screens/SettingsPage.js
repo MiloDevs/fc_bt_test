@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {Octicons} from '@expo/vector-icons';
 import { useBluetooth } from 'rn-bluetooth-classic';
 
 const screenWidth = Dimensions.get('window').width;
@@ -74,33 +75,36 @@ const SettingsPage = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={{ width: screenWidth, alignItems: 'center' }}>
-        {!connectedDevice && (
-          <TouchableOpacity
-          style={styles.button}
-          onPress={() => setLookingForDevices(true)}
-          >
-            <Text style={styles.buttonText}>Connect to Scale</Text>
-            <AntDesign name="scale" size={24} color="black" />
-          </TouchableOpacity>
-        )}
-        {lookingForDevices && (
-          <View>
-            <Text style={{ color: "#000000" }}>
-              {devices[0]?.name || devices[0]?.address || 'No devices found'}
-            </Text>
-            <Text>Looking for devices...</Text>
-            {devices.map((device) => (
-              <TouchableOpacity
-                key={device.address}
-                style={styles.deviceItem}
-                onPress={() => handleConnectToScale(device.address)}
-              >
-                <Text>{device.name || device.address}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+      <View style={{
+        width: screenWidth,
+        alignItems: 'center',
+      }}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => setLookingForDevices(true)}
+      >
+        <Text style={styles.buttonText}>Connect to Scale</Text>
+        <Octicons name="meter" size={24} color="black" />
+      </TouchableOpacity>
+      {lookingForDevices && (
+        <View
+        >
+          <Text style={{
+            color: "#000000"
+          }}>
+            {devices[0]?.name || devices[0]?.address || 'No devices found'}
+          </Text>
+          <Text>Looking for devices...</Text>
+          {devices.map((device) => (
+            <View
+              key={device.address}
+              onPress={() => handleConnectToScale(device.address)}
+            >
+              <Text>{device.name || device.address}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       </View>
       <TouchableOpacity style={styles.button} onPress={handleConnectToPrinter}>
         <Text style={styles.buttonText}>Connect to Printer</Text>
@@ -109,7 +113,7 @@ const SettingsPage = ({ navigation }) => {
       <View style={styles.signOutContainer}>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>
-          <MaterialCommunityIcons name="logout" size={24} color="red" />
+          <Octicons name="sign-out" size={24} color="red" />
         </TouchableOpacity>
       </View>
     </View>
