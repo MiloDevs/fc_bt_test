@@ -9,14 +9,14 @@ const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
 const SettingsPage = ({ navigation }) => {
-  const { scanDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
+  const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
   const [lookingForDevices, setLookingForDevices] = React.useState(false);
   const [connecting, setConnecting] = React.useState(false);
 
   useEffect(() => {
     const startScan = async () => {
       try {
-        await scanDevices();
+        await scanForDevices();
       } catch (e) {
         console.log('Error scanning devices:', e);
       }
@@ -53,7 +53,7 @@ const SettingsPage = ({ navigation }) => {
       try {
         const connected = await connectToDevice(deviceAddress);
         if (connected) {
-          setConnectedDevice(deviceAddress);
+          connectToDevice(deviceAddress);
           console.log('Connected to printer');
         } else {
           console.log('Failed to connect to printer');

@@ -15,7 +15,7 @@ const RecordPage = () => {
     const [connectedDevice, setConnectedDevice] = useState(null);
     const [scaleStability, setScaleStability] = useState(null);
     const [weight, setWeight] = useState('N/A');
-
+    
     const { devices, connectToDevice, receivedData, isConnected } = useBluetooth();
 
     useEffect(() => {
