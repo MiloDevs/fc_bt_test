@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     borderRadius: 12,
     position: "relative",
+    fontFamily: "Poppins-Regular",
   },
   input: {
     padding: 10,
@@ -118,6 +119,7 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 18,
     flex: 1,
+    fontFamily: "Poppins-Regular",
   },
   dropdown: {
     position: "absolute",
@@ -128,11 +130,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     zIndex: 1,
+    fontFamily: "Poppins-Regular",
   },
   itemText: {
     padding: 10,
     backgroundColor: "#FFF",
     borderRadius: 5,
     marginVertical: 2,
+    fontFamily: "Poppins-Regular",
   },
 });

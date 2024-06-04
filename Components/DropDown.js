@@ -94,12 +94,15 @@ const screenWidth = Dimensions.get('window').width;
       zIndex: 999,
       paddingHorizontal: 8,
       fontSize: 14,
+      fontFamily: 'Poppins-Regular',
     },
     placeholderStyle: {
       fontSize: 16,
+      fontFamily: 'Poppins-Regular',
     },
     selectedTextStyle: {
       fontSize: 16,
+      fontFamily: 'Poppins-Regular',
     },
     iconStyle: {
       width: 20,

@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     fontSize: 40,
     color: '#00FF00',
     marginBottom: 40,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-ExtraBold',
   },
   input: {
     width: '80%',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#000000',
     fontSize: 18,
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Medium',
   },
   errorText: {
     color: 'red',
