@@ -22,30 +22,28 @@ const RecordPage = () => {
 
     useEffect(() => {
         if (connectedDevice) {
-            const readInterval = setInterval(async () => {
-                try {
-                    const data = await read();
-                    if (data) {
+        const readInterval = setInterval(async () => {
+            try {
+                const data = receivedData;
+                if (data) {
+                    const textDecoder = new TextDecoder('ascii');
+                    const decodedString = textDecoder.decode(data);
 
-                        const textDecoder = new TextDecoder('ascii');
-                        const decodedString = textDecoder.decode(data);
-                        
-
-                        const parsedData = parseBluetoothData(decodedString);
-                        if (parsedData) {
-                        
-                            setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
-                        }
+                    const parsedData = parseBluetoothData(decodedString);
+                    if (parsedData) {
+                        setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
                     }
-                } catch (error) {
-                    console.error('Error reading data:', error);
                 }
-            }, 1000);
+            } catch (error) {
+                console.error('Error reading data:', error);
+            }
+        }, 1000);
 
-            return () => clearInterval(readInterval);
+        return () => clearInterval(readInterval);
         }
-    }, [connectedDevice]);
+    });
 
+ 
     const parseBluetoothData = (data) => {
         const regex = /(?:(US|ST),GS,)(\+\d+\.\d+kg)/g;
         let match;
@@ -132,7 +130,7 @@ const RecordPage = () => {
                     </View>
                 </View>
             </Modal>
-            <View style={[styles.display, {backgroundColor: scaleStability === 'STABLE' ? 'green' : 'red'}]}>
+            <View style={[styles.display, {backgroundColor: receivedData.split(',')[0] === 'ST' ? 'green' : 'red'}]}>
                 <View style={styles.data}>
                     <Text style={styles.textBold}>Scale Connected:</Text>
                     <Text style={styles.textRegular}>
@@ -140,11 +138,11 @@ const RecordPage = () => {
                     </Text>
                     <Text style={styles.textBold}>Scale Stability:</Text>
                     <Text style={[styles.textRegular]}>
-                        {scaleStability}
+                        {receivedData.split(',')[0]}
                     </Text>
                 </View>
                 <View>
-                    <Text style={styles.textWeight}>{receivedData}</Text>
+                    <Text style={styles.textWeight}>{receivedData.split(',')[2]}</Text>
                 </View>
             </View>
             <TouchableOpacity style={styles.Button}>
@@ -186,7 +184,7 @@ const styles = StyleSheet.create({
     },
     display: {
         height: 100,
-        // backgroundColor: '#2BFF2B',
+        backgroundColor: '#2BFF2B',
         width: screenWidth * 0.8,
         borderRadius: 10,
         flexDirection: 'row',
@@ -327,7 +325,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center',
         alignSelf: 'center',
-        color: 'black',
+        color: 'black'
     },
     textButton: {
         fontFamily: 'Poppins-Regular',
