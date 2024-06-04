@@ -14,48 +14,57 @@ const RecordPage = () => {
     const [isSendBySMS, setIsSendBySMS] = useState(true);
     const [connectedDevice, setConnectedDevice] = useState(null);
     const [scaleStability, setScaleStability] = useState(null);
-    const [weight, setWeight] = useState('N/A');
-    
+  
     const { devices, connectToDevice, receivedData, isConnected } = useBluetooth();
+
+    console.log(receivedData);
+
 
     useEffect(() => {
         if (connectedDevice) {
-            const readInterval = setInterval(async () => {
-                try {
-                    const data = await read();
-                    if (data) {
-                        // Convert data from bytes to ASCII string
-                        const textDecoder = new TextDecoder('ascii');
-                        const decodedString = textDecoder.decode(data);
-                        
-                        // Assuming the format is "weight:xx,stability:xx"
-                        const parsedData = parseBluetoothData(decodedString);
-                        if (parsedData) {
-                            setWeight(receivedData);
-                            setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
-                        }
+        const readInterval = setInterval(async () => {
+            try {
+                const data = receivedData;
+                if (data) {
+                    const textDecoder = new TextDecoder('ascii');
+                    const decodedString = textDecoder.decode(data);
+
+                    const parsedData = parseBluetoothData(decodedString);
+                    if (parsedData) {
+                        setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
                     }
-                } catch (error) {
-                    console.error('Error reading data:', error);
                 }
-            }, 1000);
+            } catch (error) {
+                console.error('Error reading data:', error);
+            }
+        }, 1000);
 
-            return () => clearInterval(readInterval);
+        return () => clearInterval(readInterval);
         }
-    }, [connectedDevice]);
+    });
 
+ 
     const parseBluetoothData = (data) => {
-        // Example parsing logic, adjust according to your data format
-        const weightMatch = data.match(/weight:(\d+(\.\d+)?)/);
-        const stabilityMatch = data.match(/stability:(\w+)/);
-        if (weightMatch && stabilityMatch) {
-            return {
-                weight: weightMatch[1],
-                isStable: stabilityMatch[1].toLowerCase() === 'stable'
-            };
+        const regex = /(?:(US|ST),GS,)(\+\d+\.\d+kg)/g;
+        let match;
+        let lastStableReading = null;
+    
+        while ((match = regex.exec(data)) !== null) {
+            const stability = match[1];
+            const reading = match[2];
+    
+            if (stability === 'ST') {
+                lastStableReading = reading;
+            }
         }
-        return null;
+    
+        return {
+            reading: lastStableReading,
+            isStable: lastStableReading !== null
+        };
     };
+
+
 
     const showSendBySMS = () => {
         setIsSendBySMS(true);
@@ -121,19 +130,19 @@ const RecordPage = () => {
                     </View>
                 </View>
             </Modal>
-            <View style={styles.display}>
+            <View style={[styles.display, {backgroundColor: receivedData.split(',')[0] === 'ST' ? 'green' : 'red'}]}>
                 <View style={styles.data}>
                     <Text style={styles.textBold}>Scale Connected:</Text>
                     <Text style={styles.textRegular}>
-                        {isConnected ? `${connectedDevice.name} (${connectedDevice.address})` : 'Scale not connected'}
+                        {isConnected ? `${connectedDevice.name} (${connectedDevice.address})` : 'Scale Not Connected'}
                     </Text>
                     <Text style={styles.textBold}>Scale Stability:</Text>
-                    <Text style={[styles.textRegular, { backgroundColor: scaleStability === 'STABLE' ? 'green' : 'red' }]}>
-                        {scaleStability || 'N/A'}
+                    <Text style={[styles.textRegular]}>
+                        {receivedData.split(',')[0]}
                     </Text>
                 </View>
                 <View>
-                    <Text style={styles.textWeight}>{receivedData}</Text>
+                    <Text style={styles.textWeight}>{receivedData.split(',')[2]}</Text>
                 </View>
             </View>
             <TouchableOpacity style={styles.Button}>
@@ -313,10 +322,10 @@ const styles = StyleSheet.create({
     },
     textWeight: {
         fontFamily: 'Poppins-Regular',
-        fontSize: 30,
+        fontSize: 18,
         textAlign: 'center',
         alignSelf: 'center',
-        color: 'white'
+        color: 'black'
     },
     textButton: {
         fontFamily: 'Poppins-Regular',
