@@ -31,7 +31,7 @@ const RecordPage = () => {
                         // Assuming the format is "weight:xx,stability:xx"
                         const parsedData = parseBluetoothData(decodedString);
                         if (parsedData) {
-                            setWeight(receivedData);
+                            // setWeight(receivedData);
                             setScaleStability(parsedData.isStable ? 'STABLE' : 'UNSTABLE');
                         }
                     }
