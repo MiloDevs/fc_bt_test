@@ -17,6 +17,7 @@ const RecordPage = () => {
   
     const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
 
+
     console.log(receivedData);
 
     useEffect(() => {
@@ -86,11 +87,11 @@ const RecordPage = () => {
 
 
     const showPrinterReceipt = async (device) => {
-        const supplier = 'Scales Technology Solutions.';
+        const supplier = 'Scales-Technology Solutions.';
         const location = 'Scalestech';
         const items = [
-            { name: 'Item 1', quantity: 2, weight: 50 },
-            { name: 'Item 2', quantity: 1, weight: 30 },
+            { name: 'Bag 1', quantity: 1, weight: 50 },
+            { name: 'Bag 2', quantity: 1, weight: 30 },
         ];
         const server = 'Nkunja';
     
@@ -171,7 +172,7 @@ const RecordPage = () => {
                 <View style={styles.data}>
                     <Text style={styles.textBold}>Scale Connected:</Text>
                     <Text style={styles.textRegular}>
-                        {isConnected ? `${connectedDevice.name} (${connectedDevice.address})` : 'Scale Not Connected'}
+                        {devices.map(device =>connectedDevice)}
                     </Text>
                     <Text style={styles.textBold}>Scale Stability:</Text>
                     <Text style={[styles.textRegular]}>
