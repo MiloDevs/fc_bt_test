@@ -5,6 +5,7 @@ import { Button } from 'react-native-paper';
 import Header from '../Components/Header';
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useBluetooth } from 'rn-bluetooth-classic';
+import { store } from '../store/store';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -134,6 +135,7 @@ const RecordPage = () => {
                 visible={modalVisible}
                 onRequestClose={() => {
                     setModalVisible(!modalVisible);
+                    connectToDevice(store.getState().settings.scaleAddress);
                 }}
             >
                 <View style={styles.centeredView}>
@@ -157,9 +159,11 @@ const RecordPage = () => {
                             </View>
                         ) : (
                             <View style={styles.modalContent}>
-                                <TouchableOpacity style={styles.Button}>
+                                <TouchableOpacity style={styles.Button} onPress={() => {
+                                    connectToDevice(store.getState().settings.printerAddress);
+                                }}>
                                     <AntDesign name="printer" size={34} color="blue" />
-                                    <Text style={styles.textButton}>Printer Connected</Text>
+                                    <Text style={styles.textButton}>Connect Printer</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.Button} onPress={showPrinterReceipt}>
                                     <Text style={styles.textButton}>Print</Text>
@@ -181,7 +185,7 @@ const RecordPage = () => {
                     </Text>
                 </View>
                 <View>
-                    <Text style={styles.textWeight}>{}</Text>
+                    <Text style={styles.textWeight}>{receivedData.split(',')[2]}</Text>
                 </View>
             </View>
             <TouchableOpacity style={styles.Button}>
