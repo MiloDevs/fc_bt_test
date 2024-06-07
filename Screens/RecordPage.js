@@ -9,6 +9,8 @@ import { useBluetooth } from 'rn-bluetooth-classic';
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
+
+
 const RecordPage = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [isSendBySMS, setIsSendBySMS] = useState(true);
@@ -85,7 +87,7 @@ const RecordPage = () => {
     };
 
 
-    const showPrinterReceipt = async (device) => {
+    const showPrinterReceipt = async () => {
         const supplier = 'Scales Technology Solutions.';
         const location = 'Scalestech';
         const items = [
@@ -175,11 +177,11 @@ const RecordPage = () => {
                     </Text>
                     <Text style={styles.textBold}>Scale Stability:</Text>
                     <Text style={[styles.textRegular]}>
-                        {receivedData.split(',')[0]}
+                        {parseBluetoothData(receivedData).isStable ? 'Stable' : 'Unstable'}
                     </Text>
                 </View>
                 <View>
-                    <Text style={styles.textWeight}>{receivedData.split(',')[2]}</Text>
+                    <Text style={styles.textWeight}>{}</Text>
                 </View>
             </View>
             <TouchableOpacity style={styles.Button}>
