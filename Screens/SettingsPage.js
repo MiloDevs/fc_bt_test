@@ -12,7 +12,6 @@ import { setLoggedIn, setUser } from '../store/index';
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-const add = "B8:C9:B5:30:47:90";
 
 const SettingsPage = ({ navigation }) => {
   const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
@@ -110,7 +109,7 @@ const SettingsPage = ({ navigation }) => {
                 style={styles.deviceItem}
                 onPress={() => {
                   handleConnectToScale(device.address);
-                  dispatch(setScaleAddress(device.address));
+                  dispatch(setPrinterAddress(device.address));
                 }}
               >
                 <Text>{device.name || device.address}</Text>
