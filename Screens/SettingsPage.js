@@ -106,7 +106,7 @@ const SettingsPage = ({ navigation }) => {
                 style={styles.deviceItem}
                 onPress={() => {
                   handleConnectToScale(device.address);
-                  dispatch(setPrinterAddress(device.address));
+                  dispatch(setScaleAddress(device.address));
                 }}
               >
                 <Text>{device.name || device.address}</Text>
@@ -116,10 +116,35 @@ const SettingsPage = ({ navigation }) => {
         </ScrollView>
       )}
       </View>
-      <TouchableOpacity style={styles.button} onPress={handleConnectToPrinter}>
+      <TouchableOpacity style={styles.button} onPress={() => setLookingForDevices(true)}>
         <Text style={styles.buttonText}>Connect to Printer</Text>
         <AntDesign name="printer" size={24} color="black" />
       </TouchableOpacity>
+      {lookingForDevices && (
+        <ScrollView style={{ width: '80%' }}>
+        <View
+          style={{
+            width: screenWidth * 0.8,
+            alignItems: 'center',
+            maxHeight: screenHeight * 0.4,
+          }}
+          >
+            <Text>Looking for devices...</Text>
+            {devices.map((device) => (
+              <TouchableOpacity
+                key={device.address}
+                style={styles.deviceItem}
+                onPress={() => {
+                  handleConnectToScale(device.address);
+                  dispatch(setPrinterAddress(device.address));
+                }}
+              >
+                <Text>{device.name || device.address}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      )}
       <View style={styles.signOutContainer}>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>

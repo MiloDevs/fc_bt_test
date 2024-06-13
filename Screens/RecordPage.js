@@ -18,7 +18,7 @@ const RecordPage = () => {
     const [connectedDevice, setConnectedDevice] = useState(null);
     const [scaleStability, setScaleStability] = useState(null);
   
-    const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
+    const { devices, connectToDevice, receivedData, isConnected, writeToDevice, disconnectDevice } = useBluetooth();
 
     console.log(receivedData);
 
@@ -135,7 +135,6 @@ const RecordPage = () => {
                 visible={modalVisible}
                 onRequestClose={() => {
                     setModalVisible(!modalVisible);
-                    connectToDevice(store.getState().settings.scaleAddress);
                 }}
             >
                 <View style={styles.centeredView}>
@@ -159,9 +158,7 @@ const RecordPage = () => {
                             </View>
                         ) : (
                             <View style={styles.modalContent}>
-                                <TouchableOpacity style={styles.Button} onPress={() => {
-                                    connectToDevice(store.getState().settings.printerAddress);
-                                }}>
+                                <TouchableOpacity style={styles.Button} >
                                     <AntDesign name="printer" size={34} color="blue" />
                                     <Text style={styles.textButton}>Connect Printer</Text>
                                 </TouchableOpacity>
@@ -208,7 +205,10 @@ const RecordPage = () => {
                     </View>
                 </ScrollView>
             </View>
-            <TouchableOpacity style={styles.Button} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={styles.Button} onPress={() => {
+                connectToDevice(store.getState().settings.printerAddress);
+                setModalVisible(true)
+            }}>
                 <Text style={styles.textButton}>Save Record</Text>
             </TouchableOpacity>
         </View>
