@@ -1,14 +1,20 @@
 import {Text, StyleSheet, View, Dimensions, RefreshControl, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import DropdownComponent from '../Components/DropDown';
 import Header from '../Components/Header';
 import { useNavigation } from '@react-navigation/native';
+import { store } from '../store/store';
+import { setScaleAddress } from '../store';
+import { useDispatch } from 'react-redux';
+import { useBluetooth } from 'rn-bluetooth-classic';
 
 const screenWidth = Dimensions.get("window").width;
 
 const HomePage = () => {
+  const dispatch = useDispatch();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = React.useState(false);
+ 
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -47,6 +53,13 @@ const HomePage = () => {
           marginTop: 30,
         }]}>
           <Text style={styles.buttonText}>Start</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => {
+          console.log(store.getState());
+        }} style={[styles.button, styles.button_Bg, {
+          marginTop: 30,
+        }]}>
+          <Text style={styles.buttonText}>Test</Text>
         </TouchableOpacity>
         </View>
       </ScrollView>

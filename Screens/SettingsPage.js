@@ -4,14 +4,20 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {Octicons} from '@expo/vector-icons';
 import { useBluetooth } from 'rn-bluetooth-classic';
+import { useDispatch } from 'react-redux';
+import { setPrinterAddress, setScaleAddress } from "../store/index";
+import { setLoggedIn, setUser } from '../store/index';
+
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
+
 
 const SettingsPage = ({ navigation }) => {
   const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
   const [lookingForDevices, setLookingForDevices] = React.useState(false);
   const [connecting, setConnecting] = React.useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const startScan = async () => {
@@ -34,7 +40,6 @@ const SettingsPage = ({ navigation }) => {
     try {
       const connected = await connectToDevice(deviceAddress);
       if (connected) {
-        setConnectedDevice(deviceAddress);
         console.log('Connected to device', deviceAddress);
       } else {
         console.log('Connected to device', deviceAddress);
@@ -69,6 +74,8 @@ const SettingsPage = ({ navigation }) => {
   };
 
   const handleSignOut = () => {
+    dispatch(setLoggedIn(false));
+    dispatch(setUser(null));
     console.log('Sign Out button pressed');
     navigation.navigate('LoginPage');
   };
@@ -89,35 +96,58 @@ const SettingsPage = ({ navigation }) => {
       {lookingForDevices && (
         <ScrollView style={{ width: '80%' }}>
         <View
+          style={{
+            width: screenWidth * 0.8,
+            alignItems: 'center',
+            maxHeight: screenHeight * 0.4,
+          }}
         >
-          <Text style={{
-            color: "#000000"
-          }}>
-            {devices[0]?.name || devices[0]?.address || 'No devices found'}
-          </Text>
           <Text>Looking for devices...</Text>
           {devices.map((device) => (
-            <View>
-            {devices.map((device) => (
               <TouchableOpacity
                 key={device.address}
                 style={styles.deviceItem}
-                onPress={() => handleConnectToScale(device.address)}
+                onPress={() => {
+                  handleConnectToScale(device.address);
+                  dispatch(setScaleAddress(device.address));
+                }}
               >
                 <Text>{device.name || device.address}</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-          
           ))}
         </View>
         </ScrollView>
       )}
       </View>
-      <TouchableOpacity style={styles.button} onPress={handleConnectToPrinter}>
+      <TouchableOpacity style={styles.button} onPress={() => setLookingForDevices(true)}>
         <Text style={styles.buttonText}>Connect to Printer</Text>
         <AntDesign name="printer" size={24} color="black" />
       </TouchableOpacity>
+      {lookingForDevices && (
+        <ScrollView style={{ width: '80%' }}>
+        <View
+          style={{
+            width: screenWidth * 0.8,
+            alignItems: 'center',
+            maxHeight: screenHeight * 0.4,
+          }}
+          >
+            <Text>Looking for devices...</Text>
+            {devices.map((device) => (
+              <TouchableOpacity
+                key={device.address}
+                style={styles.deviceItem}
+                onPress={() => {
+                  handleConnectToScale(device.address);
+                  dispatch(setPrinterAddress(device.address));
+                }}
+              >
+                <Text>{device.name || device.address}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      )}
       <View style={styles.signOutContainer}>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>
@@ -159,6 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
     marginVertical: 5,
     borderRadius: 5,
+    width: '100%',
   },
   signOutContainer: {
     position: 'absolute',
