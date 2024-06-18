@@ -21,7 +21,6 @@ export const TabLayout = () => {
     >
       <Tab.Screen name="HomePage" component={HomePage} />
       <Tab.Screen name="SettingsPage" component={SettingsPage} />
-      
     </Tab.Navigator>
   );
 };

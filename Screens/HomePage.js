@@ -14,14 +14,7 @@ const HomePage = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = React.useState(false);
-  const { connectToDevice } = useBluetooth();
-
-  useEffect(() => {
-    const addres = store.getState().settings.scaleAddress;
-    if (addres) {
-      connectToDevice(addres);
-    }
-  }, [])
+ 
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);

@@ -6,6 +6,7 @@ import {Octicons} from '@expo/vector-icons';
 import { useBluetooth } from 'rn-bluetooth-classic';
 import { useDispatch } from 'react-redux';
 import { setPrinterAddress, setScaleAddress } from "../store/index";
+import { setLoggedIn, setUser } from '../store/index';
 
 
 const screenWidth = Dimensions.get('window').width;
@@ -73,6 +74,8 @@ const SettingsPage = ({ navigation }) => {
   };
 
   const handleSignOut = () => {
+    dispatch(setLoggedIn(false));
+    dispatch(setUser(null));
     console.log('Sign Out button pressed');
     navigation.navigate('LoginPage');
   };
