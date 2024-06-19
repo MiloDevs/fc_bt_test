@@ -8,6 +8,7 @@ import { setScaleAddress, setLocations, setProducts } from '../store';
 import { useDispatch, useSelector } from 'react-redux';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../Database/config';
+import { get } from 'firebase/database';
 
 
 const screenWidth = Dimensions.get("window").width;
@@ -61,7 +62,8 @@ const HomePage = () => {
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-
+    getProducts();
+    getLocations();
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
