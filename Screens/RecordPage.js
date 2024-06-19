@@ -38,6 +38,7 @@ const RecordPage = () => {
     const [loading, setLoading] = useState(false);
     const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
 
+
     console.log(receivedData);
 
     useEffect(() => {
@@ -110,8 +111,8 @@ const RecordPage = () => {
         const supplier = 'Scales Technology Solutions.';
         const location = 'Scalestech';
         const items = [
-            { name: 'Item 1', quantity: 2, weight: 50 },
-            { name: 'Item 2', quantity: 1, weight: 30 },
+            { name: 'Bag 1', quantity: 1, weight: 50 },
+            { name: 'Bag 2', quantity: 1, weight: 30 },
         ];
         const server = 'Nkunja';
     
