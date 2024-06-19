@@ -12,22 +12,6 @@ import { store } from '../store/store';
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-const user = store.getState().settings.user;
-
-const fieldCollectionData = {
-  supplier: "Supplier A",
-  clerk: {
-    id: user?.clerkId,
-    name: `${user?.fName} ${user?.lName}`,
-  },
-  location: {
-    name: "Location A",
-    subLocation: "Sub-Location A",
-  },
-  timestamp: new Date().toISOString(),
-};
-
-
 const RecordPage = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [isSendBySMS, setIsSendBySMS] = useState(true);
@@ -37,6 +21,21 @@ const RecordPage = () => {
     const [quantity, setQuantity] = useState(0);
     const [loading, setLoading] = useState(false);
     const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
+
+    const user = store.getState().settings.user;
+
+    const fieldCollectionData = {
+      supplier: "Supplier A",
+      clerk: {
+        id: user?.clerkId,
+        name: `${user?.fName} ${user?.lName}`,
+      },
+      location: {
+        name: "Location A",
+        subLocation: "Sub-Location A",
+      },
+      timestamp: new Date().toISOString(),
+    };
 
 
     console.log(receivedData);
