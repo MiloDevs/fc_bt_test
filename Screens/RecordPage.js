@@ -221,8 +221,11 @@ const RecordPage = ({route, navigation}) => {
         <Header />
         <DropdownComponent
           title="Suppliers"
+          onChange={(value) => {
+            console.log(value.label);
+            setSelectedSupplier(value);
+          }}
           data={supplierData}
-          onSelect={(value) => setSelectedSupplier(value)}
         />
         
         <Modal
