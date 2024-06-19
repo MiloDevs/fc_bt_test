@@ -1,13 +1,11 @@
-import {Text, StyleSheet, View, Dimensions, RefreshControl, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native'
+import {Text, StyleSheet, View, Dimensions, RefreshControl, TouchableOpacity, ScrollView} from 'react-native'
 import React, { useEffect } from 'react'
 import DropdownComponent from '../Components/DropDown';
 import Header from '../Components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { store } from '../store/store';
-import { useDispatch } from 'react-redux';
 import { setScaleAddress, setLocations, setProducts } from '../store';
 import { useDispatch, useSelector } from 'react-redux';
-import { useBluetooth } from 'rn-bluetooth-classic';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../Database/config';
 
