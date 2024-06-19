@@ -4,9 +4,7 @@ import DropdownComponent from '../Components/DropDown';
 import Header from '../Components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { store } from '../store/store';
-import { setScaleAddress } from '../store';
 import { useDispatch } from 'react-redux';
-import { useBluetooth } from 'rn-bluetooth-classic';
 
 const screenWidth = Dimensions.get("window").width;
 

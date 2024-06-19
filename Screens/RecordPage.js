@@ -17,8 +17,8 @@ const user = store.getState().settings.user;
 const fieldCollectionData = {
   supplier: "Supplier A",
   clerk: {
-    id: user.clerkId,
-    name: `${user.fName} ${user.lName}`,
+    id: user?.clerkId,
+    name: `${user?.fName} ${user?.lName}`,
   },
   location: {
     name: "Location A",

@@ -12,23 +12,30 @@ import { useDispatch, useSelector } from "react-redux";
 import { setUser, setLoggedIn, setBusinessId } from "../store";
 import { db } from "../Database/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { store } from "../store/store";
+import { useNavigation } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
-const LoginPage = ({ navigation }) => {
+const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
-  const loggedIn = useSelector((state) => state.settings.loggedIn);
+  const navigation = useNavigation();
+  const loggedIn = store.getState().settings.loggedIn;
 
   useEffect(() => {
     if (loggedIn) {
       navigation.navigate("TabLayout");
+      console.log("Logged in");
+    } else {
+      setReady(true);
     }
-  }, [loggedIn]);
+  }, []);
 
   const handleLogin = async () => {
     setError("");
@@ -74,6 +81,14 @@ const LoginPage = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  if (!ready) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#00FF00" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
