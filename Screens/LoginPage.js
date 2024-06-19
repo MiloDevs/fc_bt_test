@@ -18,21 +18,29 @@ import { useNavigation } from "@react-navigation/native";
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
-const LoginPage = () => {
+const LoginPage = ({route, navigation}) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [ready, setReady] = useState(false);
+  const { loggedIn } = useSelector((state) => state.settings);
+  const [isLoggedIn, setIsLoggedIn] = useState(loggedIn);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
-  const navigation = useNavigation();
-  const loggedIn = store.getState().settings.loggedIn;
 
   useEffect(() => {
-    if (loggedIn) {
-      navigation.navigate("TabLayout");
-      console.log("Logged in");
-    } else {
+     console.log("loggedIn:", loggedIn);
+     console.log("isLoggedIn:", isLoggedIn);
+     setIsLoggedIn(loggedIn);
+
+    if (isLoggedIn) {
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "TabLayout" }],
+        });
+      }, 10);
+    }else{
       setReady(true);
     }
   }, []);
