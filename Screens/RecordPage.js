@@ -5,37 +5,83 @@ import { Button } from 'react-native-paper';
 import Header from '../Components/Header';
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useBluetooth } from 'rn-bluetooth-classic';
-import { addDoc, collection, doc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs } from 'firebase/firestore';
 import { db } from '../Database/config';
 import { store } from '../store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSuppliers } from "../store";
+
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-const RecordPage = () => {
+const user = store.getState().settings.user;
+
+
+const fieldCollectionData = {
+  supplier: null,
+  clerk: {
+    id: user?.clerkId,
+    name: `${user?.fName} ${user?.lName}`,
+  },
+  location: {
+    name: "Location A",
+    subLocation: "Sub-Location A",
+  },
+  timestamp: new Date().toISOString(),
+};
+
+
+const RecordPage = ({route, navigation}) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [isSendBySMS, setIsSendBySMS] = useState(true);
     const [connectedDevice, setConnectedDevice] = useState(null);
     const [scaleStability, setScaleStability] = useState(null);
+    const {location, product} = route.params;
     const [products, setProducts] = useState([]);
     const [quantity, setQuantity] = useState(0);
     const [loading, setLoading] = useState(false);
     const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
+    const dispatch = useDispatch();
+    const [selectedSupplier, setSelectedSupplier] = useState(null);
 
-    const user = store.getState().settings.user;
+    const suppliers = store.getState().settings.suppliers;
+    const BusinessId = store.getState().settings.BusinessId;
 
-    const fieldCollectionData = {
-      supplier: "Supplier A",
-      clerk: {
-        id: user?.clerkId,
-        name: `${user?.fName} ${user?.lName}`,
-      },
-      location: {
-        name: "Location A",
-        subLocation: "Sub-Location A",
-      },
-      timestamp: new Date().toISOString(),
+    useEffect(() => {
+      console.log(location, product);
+    }, [navigation]);
+
+
+    console.log(BusinessId);
+
+    const getSuppliers = async () => {
+      const suppliersCollection = collection(db, `Businesses/${BusinessId}/Suppliers`);
+      const suppliersSnapshot = await getDocs(suppliersCollection);
+      const suppliers = suppliersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      dispatch(setSuppliers(suppliers))
     };
+
+    useEffect(() => {
+      getSuppliers();
+    }, []);
+
+    useEffect(() => {
+      if (selectedSupplier) {
+        fieldCollectionData.supplier = selectedSupplier;
+      }
+    }, [selectedSupplier]);
+  
+    
+
+    const supplierData = suppliers ? suppliers.map(supplier => ({
+        label: supplier.fName,
+        value: supplier.id
+    })) : [];
+
 
 
     console.log(receivedData);
@@ -173,7 +219,12 @@ const RecordPage = () => {
     return (
       <View style={styles.Container}>
         <Header />
-        <DropdownComponent />
+        <DropdownComponent
+          title="Suppliers"
+          data={supplierData}
+          onSelect={(value) => setSelectedSupplier(value)}
+        />
+        
         <Modal
           animationType="slide"
           transparent={true}

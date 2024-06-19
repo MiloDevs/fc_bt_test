@@ -5,14 +5,61 @@ import Header from '../Components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { store } from '../store/store';
 import { useDispatch } from 'react-redux';
+import { setScaleAddress, setLocations, setProducts } from '../store';
+import { useDispatch, useSelector } from 'react-redux';
+import { useBluetooth } from 'rn-bluetooth-classic';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../Database/config';
+
 
 const screenWidth = Dimensions.get("window").width;
+
 
 const HomePage = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = React.useState(false);
- 
+  const [selectedProduct, setSelectedProduct] = React.useState(null);
+  const [selectedLocation, setSelectedLocation] = React.useState(null);
+
+  const BusinessId = store.getState().settings.BusinessId;
+
+
+  const getProducts = async () => {
+    const productsCollection = collection(db, `Businesses/${BusinessId}/Products`);
+    const productsSnapshot = await getDocs(productsCollection);
+    const products = productsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    dispatch(setProducts(products));
+    console.log('Products:', products); 
+  };
+  
+  const getLocations = async () => {
+    const locationsCollection = collection(db, `Businesses/${BusinessId}/Locations`);
+    const locationsSnapshot = await getDocs(locationsCollection);
+    const locations = locationsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    dispatch(setLocations(locations));
+    console.log('Locations:', locations); 
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await getProducts();
+      await getLocations();
+  
+      const products = store.getState().settings.products;
+      const locations = store.getState().settings.locations;
+      console.log('Products:', products);
+      console.log('Locations:', locations);
+    };
+  
+    fetchData();
+  }, []);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -21,6 +68,32 @@ const HomePage = () => {
       setRefreshing(false);
     }, 2000);
   })
+
+
+  const productsData = store.getState().settings.products
+  ? store.getState().settings.products.map(product => ({
+      label: product.name,
+      value: product.id
+    }))
+  : [];
+
+  const locationsData = store.getState().settings.locations
+  ? store.getState().settings.locations.map(location => ({
+      label: location.name,
+      value: location.id
+    }))
+  : [];
+
+  const handleNavigate = () => {
+    if(!selectedProduct || selectedLocation){
+      console.log('Please fill all fields');
+    }
+
+    navigation.navigate('RecordPage', {
+      product: selectedProduct,
+      location: selectedLocation
+    });
+  }
   return (
       <ScrollView
         style={{ flex: 1, backgroundColor: "#F9F9F9"}}
@@ -43,11 +116,17 @@ const HomePage = () => {
             flex: 1,
           }}
           >
-          <DropdownComponent title={"Products"} />
-          <DropdownComponent title={"Location"} />
-          <DropdownComponent title={"Sub-Location"} />
+          <DropdownComponent title={"Products"} onChange={(value) => {
+            console.log(value.label);
+            setSelectedProduct(value);
+          }} data={productsData}/>
+          <DropdownComponent title={"Location"} onChange={(value) => {
+            console.log(value.label);
+            setSelectedLocation(value);
+          }} data={locationsData}/>
+          {/* <DropdownComponent title={"Sub-Location"} data={subLocations}/> */}
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('RecordPage')} style={[styles.button, styles.button_Bg, {
+        <TouchableOpacity onPress={() => handleNavigate()} style={[styles.button, styles.button_Bg, {
           marginTop: 30,
         }]}>
           <Text style={styles.buttonText}>Start</Text>
