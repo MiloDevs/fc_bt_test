@@ -1,5 +1,6 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 
+
 // define the initial state
 export const initialState = {
     loggedIn: false,
@@ -48,10 +49,11 @@ const settingsSlice = createSlice({
             state.locations = action.payload;
         },
     },
+    
 });
 
 
 // export the actions
-export const { setScaleAddress, setPrinterAddress, setLoggedIn, setUser, setBusinessId } = settingsSlice.actions;
+export const { setScaleAddress, setPrinterAddress, setLoggedIn, setUser, setBusinessId, setSuppliers, setProducts, setLocations } = settingsSlice.actions;
 
 export default settingsSlice.reducer;
