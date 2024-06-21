@@ -10,6 +10,7 @@ import { db } from '../Database/config';
 import { store } from '../store/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSuppliers } from "../store";
+import RNBluetooth from "react-native-bluetooth-classic";
 
 
 const screenWidth = Dimensions.get('window').width;
@@ -25,9 +26,12 @@ const RecordPage = ({route, navigation}) => {
     const [products, setProducts] = useState([]);
     const [quantity, setQuantity] = useState(0);
     const [loading, setLoading] = useState(false);
-    const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
+    const { devices, connectToDevice, receivedData, isConnected, disconnectDevice, writeToDevice } = useBluetooth();
     const dispatch = useDispatch();
     const [selectedSupplier, setSelectedSupplier] = useState(null);
+    const [refreshing, setRefreshing] = React.useState(false);
+    const [totalQuantity, setTotalQuantity] = useState(0);
+    const [totalWeight, setTotalWeight] = useState(0);
 
     const suppliers = store.getState().settings.suppliers;
     const BusinessId = store.getState().settings.BusinessId;
@@ -44,12 +48,12 @@ const RecordPage = ({route, navigation}) => {
         name: `${user?.fName} ${user?.lName}`,
       },
       location: {
-        name: location.label,
+        name: location?.label,
         subLocation: "Sub-Location A",
       },
       product: {
-        name: product.label,
-        id: product.id,
+        name: product?.label,
+        id: product?.id,
       },
       timestamp: new Date().toISOString(),
     };
@@ -74,6 +78,14 @@ const RecordPage = ({route, navigation}) => {
     useEffect(() => {
       getSuppliers();
     }, []);
+
+    const onRefresh = React.useCallback(() => {
+      setRefreshing(true);
+      getSuppliers();
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 2000);
+    })
 
     useEffect(() => {
       if (selectedSupplier) {
@@ -146,6 +158,12 @@ const RecordPage = ({route, navigation}) => {
         setIsSendBySMS(false);
     };
 
+    const handleSwitchBt = async () => {
+        const printer = store.getState().settings.printerAddress;
+        connectToDevice(printer);
+        console.log("Printer: ", printer);
+    };
+
     const handleConnectToScale = async (device) => {
         try {
             const connected = await connectToDevice(device.address);
@@ -181,6 +199,8 @@ const RecordPage = ({route, navigation}) => {
             receiptData += `${label.padEnd(12)} ${quantity.toString().padStart(3)} ${weight.toString().padStart(10)}\n`;
         });
         receiptData += '\n';
+        receiptData += `Total:       ${totalQuantity.toString().padStart(3)} ${totalWeight.toString().padStart(10)}\n`;
+        receiptData += '\n';
         receiptData += `Served by: ${server}\n`;
         receiptData += 'Thank you for your business!\n';
         receiptData += '\n';
@@ -190,42 +210,60 @@ const RecordPage = ({route, navigation}) => {
         // Send receipt data to the printer
         console.log(receiptData);
         
-        writeToDevice(receiptData, "ascii");
+        const printer = store.getState().settings.printerAddress;
+        writeToDevice(printer, receiptData, "ascii");
         console.log('Receipt sent to the printer');
            
     };
 
+    const closeModal = () => {
+        setModalVisible(false);
+        setProducts([]);
+        connectToDevice(store.getState().settings.scaleAddress);
+    };
+
+
+    useEffect(() => {
+        const newTotalQuantity = products.reduce((acc, item) => acc + parseInt(item.quantity), 0);
+        const newTotalWeight = products.reduce((acc, item) => acc + parseFloat(item.weight), 0);
+        setTotalQuantity(newTotalQuantity);
+        setTotalWeight(newTotalWeight.toFixed(2));
+    }, [products]);
+
+
     const handleSaveRecord = async () => {
         setLoading(true);
-    try {
-        const businessId = store.getState().settings.BusinessId;
-        console.log('Business ID:', businessId);
-        // Reference to the 'FieldCollections' sub-collection
-        const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
-        // Add the document to the sub-collection
-        const docRef = await addDoc(fieldCollectionsRef, {
-            supplier: fieldCollectionData.supplier,
-            businessId: businessId,
-            clerk: fieldCollectionData.clerk,
-            location: fieldCollectionData.location,
-            timestamp: fieldCollectionData.timestamp,
-            products,
-            quantity: parseInt(products.reduce((acc, curr) => parseInt(acc) + parseInt(curr.quantity), 0)),
-            weight: parseInt(products.reduce((acc, curr) => acc + curr.weight, 0)),
-        });
-        setModalVisible(true);
-        setLoading(false);
-        console.log('Record saved successfully:', docRef.id);
-    } catch (error) {
-        console.error('Error saving record:', error);
-        setLoading(false);
-    }
+      try {
+          const businessId = store.getState().settings.BusinessId;
+          console.log('Business ID:', businessId);
+          // Reference to the 'FieldCollections' sub-collection
+          const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
+          // Add the document to the sub-collection
+          const docRef = await addDoc(fieldCollectionsRef, {
+              supplier: fieldCollectionData.supplier,
+              businessId: businessId,
+              clerk: fieldCollectionData.clerk,
+              location: fieldCollectionData.location,
+              timestamp: fieldCollectionData.timestamp,
+              products,
+              quantity: totalQuantity,
+              weight: totalWeight,
+          });
+          setModalVisible(true);
+          setLoading(false);
+          console.log('Record saved successfully:', docRef.id);
+      } catch (error) {
+          console.error('Error saving record:', error);
+          setLoading(false);
+      }
 }
+
 
 
     return (
       <View style={styles.Container}>
-        <Header />
+        {/* <Header /> */}
+        <Header refresh={refreshing} handleClick={onRefresh} />
         <DropdownComponent
           title="Suppliers"
           onChange={(value) => {
@@ -239,9 +277,7 @@ const RecordPage = ({route, navigation}) => {
           animationType="slide"
           transparent={true}
           visible={modalVisible}
-          onRequestClose={() => {
-            setModalVisible(!modalVisible);
-          }}
+          onRequestClose={closeModal}
         >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
@@ -270,7 +306,10 @@ const RecordPage = ({route, navigation}) => {
                 </View>
               ) : (
                 <View style={styles.modalContent}>
-                  <TouchableOpacity style={styles.Button}>
+                  <TouchableOpacity 
+                    style={styles.Button}
+                    onPress={handleSwitchBt}
+                  >
                     <AntDesign name="printer" size={34} color="blue" />
                     <Text style={styles.textButton}>Printer Connected</Text>
                   </TouchableOpacity>
@@ -309,28 +348,20 @@ const RecordPage = ({route, navigation}) => {
             </Text>
           </View>
           <View>
-            <Text style={styles.textWeight}>{}</Text>
+            <Text style={styles.textWeight}>
+              {(receivedData || "").toString().match(/[+-]?\d*\.?\d+/g)?.join(', ')}
+            </Text>   
+
+
+
           </View>
         </View>
         <TouchableOpacity style={styles.Button} onPress={() => {
-            setProducts([...products, { ...product , quantity: 1, weight: quantity }]);
+            setProducts([...products, { ...product , quantity: 1, weight: parseFloat((receivedData || "").toString().match(/[+-]?\d*\.?\d+/g)?.join(', ')) }]);
             setQuantity(0);
         }}>
-          <Text style={styles.textButton}>Next</Text>
+          <Text style={styles.textButton}>Capture</Text>
         </TouchableOpacity>
-        <TextInput
-          placeholder='Enter Quantity (OPTIONAL)'
-            style={{
-            width: screenWidth * 0.8,
-            padding: 10,
-            paddingLeft: 20,
-            borderWidth: 1,
-            borderColor: '#8F8F8F',
-            borderRadius: 10,
-            }}
-            onChangeText={(text) => setQuantity(text)}
-            value={quantity}
-        />
         <View style={styles.preview}>
           <Text style={styles.textButton}>Records</Text>
           <ScrollView style={styles.scroll}>
@@ -347,6 +378,11 @@ const RecordPage = ({route, navigation}) => {
                   <Text style={styles.tableCell}>{item.weight}</Text>
                 </View>
               ))}
+                <View style={styles.totalRow}>
+                    <Text style={styles.tableCell}>Total</Text>
+                    <Text style={styles.tableCell}>{totalQuantity}</Text>
+                    <Text style={styles.tableCell}>{totalWeight}</Text>
+                </View>
             </View>
           </ScrollView>
         </View>
@@ -523,6 +559,14 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-Regular',
         fontSize: 13,
         fontWeight: '400'
-    }
+    },
+    totalRow: {
+      flexDirection: 'row',
+      padding: 8,
+      borderTopWidth: 1,
+      borderTopColor: '#ccc',
+      backgroundColor: '#f0f0f0',
+  },
+  
 });
 

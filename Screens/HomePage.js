@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../Database/config';
 import { get } from 'firebase/database';
+import { useBluetooth } from 'rn-bluetooth-classic';
 
 
 const screenWidth = Dimensions.get("window").width;
@@ -20,6 +21,7 @@ const HomePage = () => {
   const [refreshing, setRefreshing] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState(null);
   const [selectedLocation, setSelectedLocation] = React.useState(null);
+  const {connectToDevice} = useBluetooth();
 
   const BusinessId = store.getState().settings.BusinessId;
 
@@ -56,6 +58,13 @@ const HomePage = () => {
       console.log('Products:', products);
       console.log('Locations:', locations);
     };
+
+    const scale = store.getState().settings.scaleAddress;
+    const printer = store.getState().settings.printerAddress;
+
+    connectToDevice(printer);
+    connectToDevice(scale);
+    
   
     fetchData();
   }, []);
