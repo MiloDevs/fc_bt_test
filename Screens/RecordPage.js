@@ -1,3 +1,4 @@
+import * as Network from 'expo-network';
 import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import DropdownComponent from '../Components/DropDown';
@@ -9,7 +10,7 @@ import { addDoc, collection, doc, getDocs } from 'firebase/firestore';
 import { db } from '../Database/config';
 import { store } from '../store/store';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSuppliers } from "../store";
+import { setSuppliers, setCollections } from "../store";
 import RNBluetooth from "react-native-bluetooth-classic";
 
 
@@ -32,6 +33,7 @@ const RecordPage = ({route, navigation}) => {
     const [refreshing, setRefreshing] = React.useState(false);
     const [totalQuantity, setTotalQuantity] = useState(0);
     const [totalWeight, setTotalWeight] = useState(0);
+    const collections = useSelector(state => state.settings.collections);
 
     const suppliers = store.getState().settings.suppliers;
     const BusinessId = store.getState().settings.BusinessId;
@@ -230,39 +232,71 @@ const RecordPage = ({route, navigation}) => {
         setTotalWeight(newTotalWeight.toFixed(2));
     }, [products]);
 
-
     const handleSaveRecord = async () => {
-        setLoading(true);
+      setLoading(true);
       try {
-          const businessId = store.getState().settings.BusinessId;
-          console.log('Business ID:', businessId);
-          // Reference to the 'FieldCollections' sub-collection
+        const businessId = store.getState().settings.BusinessId;
+        console.log('Business ID:', businessId);
+  
+        const newRecord = {
+          supplier: fieldCollectionData.supplier,
+          businessId: businessId,
+          clerk: fieldCollectionData.clerk,
+          location: fieldCollectionData.location,
+          timestamp: fieldCollectionData.timestamp,
+          products,
+          quantity: totalQuantity,
+          weight: totalWeight,
+        };
+  
+        // Check network connectivity
+        const networkState = await Network.getNetworkStateAsync();
+        if (networkState.isConnected) {
           const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
-          // Add the document to the sub-collection
-          const docRef = await addDoc(fieldCollectionsRef, {
-              supplier: fieldCollectionData.supplier,
-              businessId: businessId,
-              clerk: fieldCollectionData.clerk,
-              location: fieldCollectionData.location,
-              timestamp: fieldCollectionData.timestamp,
-              products,
-              quantity: totalQuantity,
-              weight: totalWeight,
-          });
-          setModalVisible(true);
-          setLoading(false);
+          const docRef = await addDoc(fieldCollectionsRef, newRecord);
           console.log('Record saved successfully:', docRef.id);
+        } else {
+          dispatch(setCollections([...collections, newRecord]));
+          console.log('Record saved to Redux store');
+        }
+  
+        setModalVisible(true);
+        setLoading(false);
       } catch (error) {
-          console.error('Error saving record:', error);
-          setLoading(false);
+        console.error('Error saving record:', error);
+        setLoading(false);
       }
-}
-
-
+    };
+  
+    useEffect(() => {
+      let isMounted = true;
+    
+      const checkNetworkAndUpload = async () => {
+        if (!isMounted) return;
+    
+        const networkState = await Network.getNetworkStateAsync();
+        if (networkState.isConnected) {
+          for (const record of collections) {
+            const fieldCollectionsRef = collection(db, `Businesses/${record.businessId}/FieldCollections`);
+            await addDoc(fieldCollectionsRef, record);
+          }
+          dispatch(setCollections([]));
+          console.log('Records uploaded to database');
+        }
+      };
+    
+      // Check network state periodically
+      const intervalId = setInterval(checkNetworkAndUpload, 10000); 
+    
+      return () => {
+        isMounted = false;
+        clearInterval(intervalId);
+      };
+    }, [collections]);
+  
 
     return (
       <View style={styles.Container}>
-        {/* <Header /> */}
         <Header refresh={refreshing} handleClick={onRefresh} />
         <DropdownComponent
           title="Suppliers"

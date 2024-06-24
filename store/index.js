@@ -54,6 +54,6 @@ const settingsSlice = createSlice({
 
 
 // export the actions
-export const { setScaleAddress, setPrinterAddress, setLoggedIn, setUser, setBusinessId, setSuppliers, setProducts, setLocations } = settingsSlice.actions;
+export const { setScaleAddress, setPrinterAddress, setLoggedIn, setUser, setBusinessId, setSuppliers, setProducts, setLocations, setCollections } = settingsSlice.actions;
 
 export default settingsSlice.reducer;
