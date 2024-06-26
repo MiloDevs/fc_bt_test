@@ -166,6 +166,7 @@ const RecordPage = ({route, navigation}) => {
         console.log("Printer: ", printer);
     };
 
+
     const handleConnectToScale = async (device) => {
         try {
             const connected = await connectToDevice(device.address);
@@ -175,7 +176,7 @@ const RecordPage = ({route, navigation}) => {
         } catch (e) {
             console.error(e);
         }
-    };
+    };  
 
 
     const showPrinterReceipt = async () => {

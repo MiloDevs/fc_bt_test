@@ -25,8 +25,7 @@ const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
 const SettingsPage = ({ navigation }) => {
-  const { scanForDevices, devices, connectToDevice, connectedDevice } =
-    useBluetooth();
+  const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
   const [lookingForDevices, setLookingForDevices] = useState(false);
   const [deviceType, setDeviceType] = useState(null); // 'scale' or 'printer'
   const [connecting, setConnecting] = useState(false);
