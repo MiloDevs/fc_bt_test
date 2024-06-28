@@ -1,11 +1,14 @@
 name: Android Development Build
 
 on:
-  # Specify when you want the build to run here
-
+  push:
+    branches:
+      - main
+      
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: test
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
