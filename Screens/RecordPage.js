@@ -1,5 +1,5 @@
 import * as Network from 'expo-network';
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, ToastAndroid } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import DropdownComponent from '../Components/DropDown';
 import { Button } from 'react-native-paper';
@@ -162,21 +162,14 @@ const RecordPage = ({route, navigation}) => {
 
     const handleSwitchBt = async () => {
         const printer = store.getState().settings.printerAddress;
-        connectToDevice(printer);
-        console.log("Printer: ", printer);
-    };
-
-
-    const handleConnectToScale = async (device) => {
         try {
-            const connected = await connectToDevice(device.address);
-            if (connected) {
-                setConnectedDevice(device);
-            }
-        } catch (e) {
-            console.error(e);
+          await RNBluetooth.connectToDevice(printer);
+          ToastAndroid.show('Printer connected', ToastAndroid.SHORT);
+        } catch (error) {
+          console.error('Error connecting to printer:', error);
+          ToastAndroid.show('Failed to connect to printer', ToastAndroid.SHORT);
         }
-    };  
+    };
 
 
     const showPrinterReceipt = async () => {
@@ -214,7 +207,7 @@ const RecordPage = ({route, navigation}) => {
         console.log(receiptData);
         
         const printer = store.getState().settings.printerAddress;
-        writeToDevice(printer, receiptData, "ascii");
+        RNBluetooth.writeToDevice(printer, receiptData);
         console.log('Receipt sent to the printer');
            
     };
