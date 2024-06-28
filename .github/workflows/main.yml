@@ -18,25 +18,21 @@ jobs:
         with:
           node-version: 18.x
 
-      - name: Setup Expo CLI
-        run: npm install -g expo-cli
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Setup EAS
-        run: npx eas-cli configure --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
       - name: Install Expo development dependencies
         run: npx expo install expo-dev-client
 
-      - name: Build Android APK
-        run: npx eas build -p android --profile preview --local
+      - name: Build Android app
+        run: eas build --local --platform android --profile preview --non-interactive
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v3
