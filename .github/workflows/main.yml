@@ -3,8 +3,8 @@ name: Expo Android Build
 on:
   push:
     branches:
-      - main  # or your default branch name
-  workflow_dispatch:  # Allows manual triggering
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,15 +22,6 @@ jobs:
           node-version: 18.x
           cache: 'npm'
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
         with:
@@ -38,50 +29,37 @@ jobs:
           expo-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.OS }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.OS }}-npm-
-
       - name: Install dependencies
-        run: npm ci
-
-      - name: Install Expo development dependencies
-        run: npx expo install expo-dev-client
-
-      - name: Install Android NDK
         run: |
-          sdkmanager --install "ndk;25.1.8937393"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.1.8937393" >> $GITHUB_ENV
+          npm ci
+          npx expo install expo-dev-client
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Display Expo config
+        run: npx expo config
+
+      - name: Display project structure
+        run: |
+          ls -R
+          cat app.json || cat app.config.js
+          cat eas.json
 
       - name: Build Android app
-        run: eas build --local --platform android --profile preview --non-interactive --output ./android-build.apk
+        run: eas build --local --platform android --profile preview --non-interactive
         env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-          JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
+          EXPO_DEBUG: true
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v3
+        if: success()
         with:
           name: android-build
-          path: ./android-build.apk
+          path: ./**/*.apk
 
       - name: Archive build logs on failure
         uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: build-logs
-          path: ~/eas-build.log
+          path: |
+            ~/.eas-build.log
+            ~/.expo/logs
