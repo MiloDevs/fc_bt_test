@@ -10,6 +10,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../Database/config';
 import { get } from 'firebase/database';
 import { useBluetooth } from 'rn-bluetooth-classic';
+import RNBluetooth from "react-native-bluetooth-classic";
 
 
 const screenWidth = Dimensions.get("window").width;
@@ -62,9 +63,8 @@ const HomePage = () => {
     const scale = store.getState().settings.scaleAddress;
     const printer = store.getState().settings.printerAddress;
 
-    connectToDevice(printer);
-    connectToDevice(scale);
-    
+    scale && RNBluetooth.connectToDevice(scale);
+    printer && RNBluetooth.connectToDevice(printer);
   
     fetchData();
   }, []);

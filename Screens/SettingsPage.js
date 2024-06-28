@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  ToastAndroid,
 } from "react-native";
 import {
   AntDesign,
@@ -20,16 +21,19 @@ import {
   setLoggedIn,
   setUser,
 } from "../store/index";
+import LottieView from "lottie-react-native";
+import { useNavigation } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
-const SettingsPage = ({ navigation }) => {
+const SettingsPage = () => {
   const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
   const [lookingForDevices, setLookingForDevices] = useState(false);
   const [deviceType, setDeviceType] = useState(null); // 'scale' or 'printer'
   const [connecting, setConnecting] = useState(false);
   const dispatch = useDispatch();
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (lookingForDevices) {
@@ -48,18 +52,16 @@ const SettingsPage = ({ navigation }) => {
     setConnecting(true);
     try {
       const connected = await connectToDevice(deviceAddress);
-      if (connected) {
-        if (deviceType === "scale") {
-          dispatch(setScaleAddress(deviceAddress));
-        } else if (deviceType === "printer") {
-          dispatch(setPrinterAddress(deviceAddress));
-        }
-        console.log(`Connected to ${deviceType}:`, deviceAddress);
-      } else {
-        console.log(`Failed to connect to ${deviceType}:`, deviceAddress);
+      if (deviceType === "scale") {
+        dispatch(setScaleAddress(deviceAddress));
+      } else if (deviceType === "printer") {
+        dispatch(setPrinterAddress(deviceAddress));
       }
+      setLookingForDevices(false);
+      ToastAndroid.show(`Connected to ${deviceType}`, ToastAndroid.SHORT);
     } catch (e) {
       console.log(`Error connecting to ${deviceType}:`, e);
+      ToastAndroid.show(`Error connecting to ${deviceType}`, ToastAndroid.SHORT);
     } finally {
       setConnecting(false);
       setLookingForDevices(false);
@@ -71,6 +73,7 @@ const SettingsPage = ({ navigation }) => {
     dispatch(setLoggedIn(false));
     dispatch(setUser(null));
     navigation.navigate("LoginPage");
+    ToastAndroid.show("Signed out", ToastAndroid.SHORT);
   };
 
   return (
@@ -100,6 +103,12 @@ const SettingsPage = ({ navigation }) => {
       {lookingForDevices && (
         <ScrollView style={styles.deviceList}>
           <View style={styles.deviceListContainer}>
+            <LottieView
+              source={require("../Assets/bt.json")}
+              autoPlay
+              loop
+              style={{ width: 100, height: 100 }}
+            />
             <Text>Please select your {deviceType}</Text>
             {devices.map((device) => (
               <TouchableOpacity

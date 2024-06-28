@@ -24,7 +24,7 @@ const LoginPage = ({route, navigation}) => {
   const [ready, setReady] = useState(false);
   const { loggedIn } = useSelector((state) => state.settings);
   const [isLoggedIn, setIsLoggedIn] = useState(loggedIn);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
 
