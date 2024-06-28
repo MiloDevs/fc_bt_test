@@ -275,7 +275,7 @@ const RecordPage = ({route, navigation}) => {
             await addDoc(fieldCollectionsRef, record);
           }
           dispatch(setCollections([]));
-          console.log('Records uploaded to database');
+          // console.log('Records uploaded to database');
         }
       };
     
@@ -597,4 +597,3 @@ const styles = StyleSheet.create({
   },
   
 });
-
