@@ -4,16 +4,16 @@ on:
   push:
     branches:
       - main
-      
+
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: test
     steps:
-      - name: Setup repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup node
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4.0.2
         with:
           node-version: 18.x
@@ -26,7 +26,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v3.2.1
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -37,6 +37,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Prebuild Expo project
+        run: expo prebuild
+
+      - name: Modify Gradle Wrapper Properties
+        run: |
+          sed -i 's/gradle-.*-all.zip/gradle-6.8.3-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Build Android app
         run: eas build --platform android --profile development --local --output ${{ github.workspace }}/app-release.apk
