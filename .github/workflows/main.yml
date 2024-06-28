@@ -3,7 +3,7 @@ name: Android Development Build
 on:
   push:
     branches:
-      - main
+      - redux
 
 jobs:
   build:
