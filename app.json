@@ -10,7 +10,17 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.milodevs.bt_example"
+      "package": "com.milodevs.bt_example",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_ADMIN",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -18,16 +28,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      ["with-rn-bluetooth-classic",
-        {
-          "peripheralUsageDescription": "Allow myDevice to check bluetooth peripheral info",
-          "alwaysUsageDescription": "Allow myDevice to always use bluetooth info",
-          "protocols": [
-            "com.milothedev.bt_test"
-          ]
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true

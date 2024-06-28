@@ -1,21 +1,108 @@
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
+import * as Network from 'expo-network';
+import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, ToastAndroid } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import DropdownComponent from '../Components/DropDown';
 import { Button } from 'react-native-paper';
 import Header from '../Components/Header';
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useBluetooth } from 'rn-bluetooth-classic';
+import { addDoc, collection, doc, getDocs } from 'firebase/firestore';
+import { db } from '../Database/config';
+import { store } from '../store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSuppliers, setCollections } from "../store";
+import RNBluetooth from "react-native-bluetooth-classic";
+
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-const RecordPage = () => {
+
+const RecordPage = ({route, navigation}) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [isSendBySMS, setIsSendBySMS] = useState(true);
     const [connectedDevice, setConnectedDevice] = useState(null);
     const [scaleStability, setScaleStability] = useState(null);
+    const {location, product} = route.params;
+    const [products, setProducts] = useState([]);
+    const [quantity, setQuantity] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const { devices, connectToDevice, receivedData, isConnected, disconnectDevice, writeToDevice } = useBluetooth();
+    const dispatch = useDispatch();
+    const [selectedSupplier, setSelectedSupplier] = useState(null);
+    const [refreshing, setRefreshing] = React.useState(false);
+    const [totalQuantity, setTotalQuantity] = useState(0);
+    const [totalWeight, setTotalWeight] = useState(0);
+    const collections = useSelector(state => state.settings.collections);
+
+    const suppliers = store.getState().settings.suppliers;
+    const BusinessId = store.getState().settings.BusinessId;
+
+    const user = store.getState().settings.user;
+
+    const fieldCollectionData = {
+      supplier: {
+        id: selectedSupplier?.value,
+        name: selectedSupplier?.label,
+      },
+      clerk: {
+        id: user?.clerkId,
+        name: `${user?.fName} ${user?.lName}`,
+      },
+      location: {
+        name: location?.label,
+        subLocation: "Sub-Location A",
+      },
+      product: {
+        name: product?.label,
+        id: product?.id,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    useEffect(() => {
+      console.log(location, product);
+    }, [navigation]);
+
+
+    console.log(BusinessId);
+
+    const getSuppliers = async () => {
+      const suppliersCollection = collection(db, `Businesses/${BusinessId}/Suppliers`);
+      const suppliersSnapshot = await getDocs(suppliersCollection);
+      const suppliers = suppliersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      dispatch(setSuppliers(suppliers))
+    };
+
+    useEffect(() => {
+      getSuppliers();
+    }, []);
+
+    const onRefresh = React.useCallback(() => {
+      setRefreshing(true);
+      getSuppliers();
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 2000);
+    })
+
+    useEffect(() => {
+      if (selectedSupplier) {
+        fieldCollectionData.supplier = selectedSupplier;
+      }
+    }, [selectedSupplier]);
   
-    const { devices, connectToDevice, receivedData, isConnected, writeToDevice } = useBluetooth();
+    
+
+    const supplierData = suppliers ? suppliers.map(supplier => ({
+        label: supplier.fName,
+        value: supplier.id
+    })) : [];
+
+
 
     console.log(receivedData);
 
@@ -73,40 +160,42 @@ const RecordPage = () => {
         setIsSendBySMS(false);
     };
 
-    const handleConnectToScale = async (device) => {
+    const handleSwitchBt = async () => {
+        const printer = store.getState().settings.printerAddress;
         try {
-            const connected = await connectToDevice(device.address);
-            if (connected) {
-                setConnectedDevice(device);
-            }
-        } catch (e) {
-            console.error(e);
+          await RNBluetooth.connectToDevice(printer);
+          ToastAndroid.show('Printer connected', ToastAndroid.SHORT);
+        } catch (error) {
+          console.error('Error connecting to printer:', error);
+          ToastAndroid.show('Failed to connect to printer', ToastAndroid.SHORT);
         }
     };
 
 
-    const showPrinterReceipt = async (device) => {
-        const supplier = 'Scales Technology Solutions.';
-        const location = 'Scalestech';
-        const items = [
-            { name: 'Item 1', quantity: 2, weight: 50 },
-            { name: 'Item 2', quantity: 1, weight: 30 },
-        ];
-        const server = 'Nkunja';
+    const showPrinterReceipt = async () => {
+      console.log(products)
+        const supplier = fieldCollectionData.supplier.name;
+        const location = fieldCollectionData.location.name;
+        const product = fieldCollectionData.product.name;
+        const items = products;
+        const server = fieldCollectionData.clerk.name;
     
         // Generate receipt data
         let receiptData = '';
         receiptData += 'Weighing Receipt\n';
         receiptData += `Supplier: ${supplier}\n`;
         receiptData += `Location: ${location}\n`;
+        receiptData += `Product: ${product}\n`;
         receiptData += `Date: ${new Date().toLocaleDateString()}\n`;
         receiptData += `Time: ${new Date().toLocaleTimeString()}\n`;
         receiptData += '\n';
         receiptData += 'Item         Qty    Weight (Kg)\n';
         items.forEach(item => {
-            const { name, quantity, weight } = item;
-            receiptData += `${name.padEnd(12)} ${quantity.toString().padStart(3)} ${weight.toString().padStart(10)}\n`;
+            const { label, quantity, weight } = item;
+            receiptData += `${label.padEnd(12)} ${quantity.toString().padStart(3)} ${weight.toString().padStart(10)}\n`;
         });
+        receiptData += '\n';
+        receiptData += `Total:       ${totalQuantity.toString().padStart(3)} ${totalWeight.toString().padStart(10)}\n`;
         receiptData += '\n';
         receiptData += `Served by: ${server}\n`;
         receiptData += 'Thank you for your business!\n';
@@ -115,97 +204,227 @@ const RecordPage = () => {
         receiptData += '\n';
     
         // Send receipt data to the printer
+        console.log(receiptData);
         
-        writeToDevice(receiptData, "ascii");
+        const printer = store.getState().settings.printerAddress;
+        RNBluetooth.writeToDevice(printer, receiptData);
         console.log('Receipt sent to the printer');
            
     };
 
+    const closeModal = () => {
+        setModalVisible(false);
+        setProducts([]);
+        connectToDevice(store.getState().settings.scaleAddress);
+    };
+
+
+    useEffect(() => {
+        const newTotalQuantity = products.reduce((acc, item) => acc + parseInt(item.quantity), 0);
+        const newTotalWeight = products.reduce((acc, item) => acc + parseFloat(item.weight), 0);
+        setTotalQuantity(newTotalQuantity);
+        setTotalWeight(newTotalWeight.toFixed(2));
+    }, [products]);
+
+    const handleSaveRecord = async () => {
+      setLoading(true);
+      try {
+        const businessId = store.getState().settings.BusinessId;
+        console.log('Business ID:', businessId);
+  
+        const newRecord = {
+          supplier: fieldCollectionData.supplier,
+          businessId: businessId,
+          clerk: fieldCollectionData.clerk,
+          location: fieldCollectionData.location,
+          timestamp: fieldCollectionData.timestamp,
+          products,
+          quantity: totalQuantity,
+          weight: totalWeight,
+        };
+  
+        // Check network connectivity
+        const networkState = await Network.getNetworkStateAsync();
+        if (networkState.isConnected) {
+          const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
+          const docRef = await addDoc(fieldCollectionsRef, newRecord);
+          console.log('Record saved successfully:', docRef.id);
+        } else {
+          dispatch(setCollections([...collections, newRecord]));
+          console.log('Record saved to Redux store');
+        }
+  
+        setModalVisible(true);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error saving record:', error);
+        setLoading(false);
+      }
+    };
+  
+    useEffect(() => {
+      let isMounted = true;
+    
+      const checkNetworkAndUpload = async () => {
+        if (!isMounted) return;
+    
+        const networkState = await Network.getNetworkStateAsync();
+        if (networkState.isConnected) {
+          for (const record of collections) {
+            const fieldCollectionsRef = collection(db, `Businesses/${record.businessId}/FieldCollections`);
+            await addDoc(fieldCollectionsRef, record);
+          }
+          dispatch(setCollections([]));
+          console.log('Records uploaded to database');
+        }
+      };
+    
+      // Check network state periodically
+      const intervalId = setInterval(checkNetworkAndUpload, 10000); 
+    
+      return () => {
+        isMounted = false;
+        clearInterval(intervalId);
+      };
+    }, [collections]);
+  
 
     return (
-        <View style={styles.Container}>
-            <Header />
-            <DropdownComponent />
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => {
-                    setModalVisible(!modalVisible);
-                }}
-            >
-                <View style={styles.centeredView}>
-                    <View style={styles.modalView}>
-                        <View style={styles.modalNav}>
-                            <TouchableOpacity style={styles.modaltouchable} onPress={showSendBySMS}>
-                                <AntDesign name="book" size={24} color="black" />
-                                <Text style={styles.touchableText}>Send By SMS</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.modaltouchable} onPress={showPrintReceipt}>
-                                <AntDesign name="printer" size={24} color="black" />
-                                <Text style={styles.touchableText}>Print Receipt</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {isSendBySMS ? (
-                            <View style={styles.modalContent}>
-                                <TextInput placeholder='+254' style={styles.modalInput} />
-                                <TouchableOpacity style={styles.Button}>
-                                    <Text style={styles.textButton}>Send</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View style={styles.modalContent}>
-                                <TouchableOpacity style={styles.Button}>
-                                    <AntDesign name="printer" size={34} color="blue" />
-                                    <Text style={styles.textButton}>Printer Connected</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.Button} onPress={showPrinterReceipt}>
-                                    <Text style={styles.textButton}>Print</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
+      <View style={styles.Container}>
+        <Header refresh={refreshing} handleClick={onRefresh} />
+        <DropdownComponent
+          title="Suppliers"
+          onChange={(value) => {
+            console.log(value);
+            setSelectedSupplier(value);
+          }}
+          data={supplierData}
+        />
+        
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={closeModal}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View style={styles.modalNav}>
+                <TouchableOpacity
+                  style={styles.modaltouchable}
+                  onPress={showSendBySMS}
+                >
+                  <AntDesign name="book" size={24} color="black" />
+                  <Text style={styles.touchableText}>Send By SMS</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modaltouchable}
+                  onPress={showPrintReceipt}
+                >
+                  <AntDesign name="printer" size={24} color="black" />
+                  <Text style={styles.touchableText}>Print Receipt</Text>
+                </TouchableOpacity>
+              </View>
+              {isSendBySMS ? (
+                <View style={styles.modalContent}>
+                  <TextInput placeholder="+254" style={styles.modalInput} />
+                  <TouchableOpacity style={styles.Button}>
+                    <Text style={styles.textButton}>Send</Text>
+                  </TouchableOpacity>
                 </View>
-            </Modal>
-            <View style={[styles.display, {backgroundColor: receivedData.split(',')[0] === 'ST' ? 'green' : 'red'}]}>
-                <View style={styles.data}>
-                    <Text style={styles.textBold}>Scale Connected:</Text>
-                    <Text style={styles.textRegular}>
-                        {isConnected ? `${connectedDevice.name} (${connectedDevice.address})` : 'Scale Not Connected'}
-                    </Text>
-                    <Text style={styles.textBold}>Scale Stability:</Text>
-                    <Text style={[styles.textRegular]}>
-                        {receivedData.split(',')[0]}
-                    </Text>
+              ) : (
+                <View style={styles.modalContent}>
+                  <TouchableOpacity 
+                    style={styles.Button}
+                    onPress={handleSwitchBt}
+                  >
+                    <AntDesign name="printer" size={34} color="blue" />
+                    <Text style={styles.textButton}>Printer Connected</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.Button}
+                    onPress={showPrinterReceipt}
+                  >
+                    <Text style={styles.textButton}>Print</Text>
+                  </TouchableOpacity>
                 </View>
-                <View>
-                    <Text style={styles.textWeight}>{receivedData.split(',')[2]}</Text>
-                </View>
+              )}
             </View>
-            <TouchableOpacity style={styles.Button}>
-                <Text style={styles.textButton}>Next</Text>
-            </TouchableOpacity>
-            <View style={styles.preview}>
-                <Text style={styles.textButton}>Records</Text>
-                <ScrollView style={styles.scroll}>
-                    <View style={styles.table}>
-                        <View style={styles.tableRow}>
-                            <Text style={styles.tableHeader}>Item</Text>
-                            <Text style={styles.tableHeader}>Quantity</Text>
-                            <Text style={styles.tableHeader}>Weight</Text>
-                        </View>
-                        <View style={styles.tableRow}>
-                            <Text style={styles.tableCell}>Row 1, Col 1</Text>
-                            <Text style={styles.tableCell}>Row 1, Col 2</Text>
-                            <Text style={styles.tableCell}>Row 1, Col 3</Text>
-                        </View>
-                    </View>
-                </ScrollView>
-            </View>
-            <TouchableOpacity style={styles.Button} onPress={() => setModalVisible(true)}>
-                <Text style={styles.textButton}>Save Record</Text>
-            </TouchableOpacity>
+          </View>
+        </Modal>
+        <View
+          style={[
+            styles.display,
+            {
+              backgroundColor:
+                receivedData.split(",")[0] === "ST" ? "green" : "red",
+            },
+          ]}
+        >
+          <View style={styles.data}>
+            <Text style={styles.textBold}>Scale Connected:</Text>
+            <Text style={styles.textRegular}>
+              {isConnected
+                ? `${connectedDevice.name} (${connectedDevice.address})`
+                : "Scale Not Connected"}
+            </Text>
+            <Text style={styles.textBold}>Scale Stability:</Text>
+            <Text style={[styles.textRegular]}>
+              {parseBluetoothData(receivedData).isStable
+                ? "Stable"
+                : "Unstable"}
+            </Text>
+          </View>
+          <View>
+            <Text style={styles.textWeight}>
+              {(receivedData || "").toString().match(/[+-]?\d*\.?\d+/g)?.join(', ')}
+            </Text>   
+
+
+
+          </View>
         </View>
+        <TouchableOpacity style={styles.Button} onPress={() => {
+            setProducts([...products, { ...product , quantity: 1, weight: parseFloat((receivedData || "").toString().match(/[+-]?\d*\.?\d+/g)?.join(', ')) }]);
+            setQuantity(0);
+        }}>
+          <Text style={styles.textButton}>Capture</Text>
+        </TouchableOpacity>
+        <View style={styles.preview}>
+          <Text style={styles.textButton}>Records</Text>
+          <ScrollView style={styles.scroll}>
+            <View style={styles.table}>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableHeader}>Item</Text>
+                <Text style={styles.tableHeader}>Quantity</Text>
+                <Text style={styles.tableHeader}>Weight</Text>
+              </View>
+              {products.map((item, index) => (
+                <View style={styles.tableRow} key={index}>
+                  <Text style={styles.tableCell}>{item.label}</Text>
+                  <Text style={styles.tableCell}>{item.quantity}</Text>
+                  <Text style={styles.tableCell}>{item.weight}</Text>
+                </View>
+              ))}
+                <View style={styles.totalRow}>
+                    <Text style={styles.tableCell}>Total</Text>
+                    <Text style={styles.tableCell}>{totalQuantity}</Text>
+                    <Text style={styles.tableCell}>{totalWeight}</Text>
+                </View>
+            </View>
+          </ScrollView>
+        </View>
+        <TouchableOpacity
+          style={styles.Button}
+          onPress={() => handleSaveRecord()}
+        >
+          {loading ? (
+            <ActivityIndicator color="#00FF00" />
+          ) : (
+            <Text style={styles.textButton}>Save Record</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     );
 };
 
@@ -311,7 +530,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     preview: {
-        height: 300,
+        height: 200,
         backgroundColor: '#F2F2F2',
         borderRadius: 10,
         width: screenWidth * 0.8,
@@ -368,6 +587,14 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-Regular',
         fontSize: 13,
         fontWeight: '400'
-    }
+    },
+    totalRow: {
+      flexDirection: 'row',
+      padding: 8,
+      borderTopWidth: 1,
+      borderTopColor: '#ccc',
+      backgroundColor: '#f0f0f0',
+  },
+  
 });
 

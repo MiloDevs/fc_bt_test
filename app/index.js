@@ -1,8 +1,10 @@
-import { NavigationContainer } from "@react-navigation/native";
 import React from "react";
-import { MyStack, TabLayout } from "./stack";
+import { MyStack } from "./stack";
 import { BluetoothProvider } from "rn-bluetooth-classic";
 import { useFonts } from "expo-font";
+import { Provider } from "react-redux";
+import { store, persistor } from "../store/store";
+import { PersistGate } from "redux-persist/integration/react";
 
 
 export default function Root() {
@@ -22,8 +24,11 @@ export default function Root() {
 
     return(
         <BluetoothProvider>
-            <MyStack />
+            <Provider store={store}>
+                <PersistGate persistor={persistor} loading={null}>
+                    <MyStack />
+                </PersistGate>
+            </Provider>
         </BluetoothProvider>
-    )
-    
+    );    
 }

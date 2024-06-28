@@ -6,6 +6,7 @@ import HomePage from "../Screens/HomePage";
 import RecordPage from "../Screens/RecordPage";
 import SettingsPage from "../Screens/SettingsPage";
 import LoginPage from "../Screens/LoginPage";
+import { store } from "../store/store";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -21,7 +22,6 @@ export const TabLayout = () => {
     >
       <Tab.Screen name="HomePage" component={HomePage} />
       <Tab.Screen name="SettingsPage" component={SettingsPage} />
-      
     </Tab.Navigator>
   );
 };
