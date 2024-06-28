@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Prebuild Expo project
-        run: expo prebuild
+        run: expo prebuild --platform android
 
       - name: Modify Gradle Wrapper Properties
         run: |
