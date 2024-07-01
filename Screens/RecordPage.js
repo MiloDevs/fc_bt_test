@@ -1,5 +1,5 @@
 import * as Network from 'expo-network';
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, ToastAndroid } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import DropdownComponent from '../Components/DropDown';
 import { Button } from 'react-native-paper';
@@ -162,13 +162,8 @@ const RecordPage = ({route, navigation}) => {
 
     const handleSwitchBt = async () => {
         const printer = store.getState().settings.printerAddress;
-        try {
-          await RNBluetooth.connectToDevice(printer);
-          ToastAndroid.show('Printer connected', ToastAndroid.SHORT);
-        } catch (error) {
-          console.error('Error connecting to printer:', error);
-          ToastAndroid.show('Failed to connect to printer', ToastAndroid.SHORT);
-        }
+        connectToDevice(printer);
+        console.log("Printer: ", printer);
     };
 
 
@@ -207,7 +202,7 @@ const RecordPage = ({route, navigation}) => {
         console.log(receiptData);
         
         const printer = store.getState().settings.printerAddress;
-        RNBluetooth.writeToDevice(printer, receiptData);
+        writeToDevice(printer, receiptData, "ascii");
         console.log('Receipt sent to the printer');
            
     };
@@ -217,7 +212,6 @@ const RecordPage = ({route, navigation}) => {
         setProducts([]);
         connectToDevice(store.getState().settings.scaleAddress);
     };
-
 
     useEffect(() => {
         const newTotalQuantity = products.reduce((acc, item) => acc + parseInt(item.quantity), 0);

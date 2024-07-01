@@ -141,7 +141,8 @@ const HomePage = () => {
           <Text style={styles.buttonText}>Start</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
-          console.log(store.getState());
+          const scale = store.getState().settings.scaleAddress;
+          scale && RNBluetooth.connectToDevice(scale);
         }} style={[styles.button, styles.button_Bg, {
           marginTop: 30,
         }]}>
