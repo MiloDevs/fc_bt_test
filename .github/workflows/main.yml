@@ -1,7 +1,8 @@
 name: Android Development Build
 
 on:
-  
+  -push:
+    branch: redux
 
 jobs:
   build:
