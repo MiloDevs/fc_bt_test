@@ -175,7 +175,9 @@ const RecordPage = ({route, navigation}) => {
     const showPrinterReceipt = async () => {
       console.log(products)
         const supplier = fieldCollectionData.supplier.name;
+        const supplierID = fieldCollectionData.supplier.id;
         const location = fieldCollectionData.location.name;
+        const sublocation = fieldCollectionData.location.subLocation;
         const product = fieldCollectionData.product.name;
         const items = products;
         const server = fieldCollectionData.clerk.name;
@@ -183,8 +185,8 @@ const RecordPage = ({route, navigation}) => {
         // Generate receipt data
         let receiptData = '';
         receiptData += 'Weighing Receipt\n';
-        receiptData += `Supplier: ${supplier}\n`;
-        receiptData += `Location: ${location}\n`;
+        receiptData += `Supplier: ${supplier}  #: ${supplierID}\n`;
+        receiptData += `Location: ${location}  ${sublocation}\n`;
         receiptData += `Product: ${product}\n`;
         receiptData += `Date: ${new Date().toLocaleDateString()}\n`;
         receiptData += `Time: ${new Date().toLocaleTimeString()}\n`;
@@ -267,15 +269,26 @@ const RecordPage = ({route, navigation}) => {
     
       const checkNetworkAndUpload = async () => {
         if (!isMounted) return;
-    
-        const networkState = await Network.getNetworkStateAsync();
-        if (networkState.isConnected) {
-          for (const record of collections) {
-            const fieldCollectionsRef = collection(db, `Businesses/${record.businessId}/FieldCollections`);
-            await addDoc(fieldCollectionsRef, record);
+      
+        try {
+          const networkState = await Network.getNetworkStateAsync();
+          if (networkState.isConnected && collections.length > 0) {
+            const uploadedRecords = [];
+            for (const record of collections) {
+              try {
+                const fieldCollectionsRef = collection(db, `Businesses/${record.businessId}/FieldCollections`);
+                await addDoc(fieldCollectionsRef, record);
+                uploadedRecords.push(record);
+              } catch (error) {
+                console.error('Error uploading record:', error);
+              }
+            }
+            // Remove only the successfully uploaded records
+            dispatch(setCollections(collections.filter(record => !uploadedRecords.includes(record))));
+            console.log(`${uploadedRecords.length} records uploaded to database`);
           }
-          dispatch(setCollections([]));
-          console.log('Records uploaded to database');
+        } catch (error) {
+          console.error('Error checking network or uploading:', error);
         }
       };
     
