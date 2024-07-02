@@ -245,37 +245,48 @@ const RecordPage = ({route, navigation}) => {
   
         // Check network connectivity
         const networkState = await Network.getNetworkStateAsync();
-        if (networkState.isConnected) {
-          const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
-          const docRef = await addDoc(fieldCollectionsRef, newRecord);
-          console.log('Record saved successfully:', docRef.id);
-        } else {
-          dispatch(setCollections([...collections, newRecord]));
-          console.log('Record saved to Redux store');
-        }
-  
-        setModalVisible(true);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error saving record:', error);
-        setLoading(false);
-      }
-    };
-  
+            if (networkState.isConnected) {
+              const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
+              const docRef = await addDoc(fieldCollectionsRef, newRecord);
+              console.log('Record saved successfully:', docRef.id);
+            } else {
+              dispatch(setCollections([...collections, newRecord]));
+              console.log('Record saved to Redux store');
+            }
+      
+            setModalVisible(true);
+            setLoading(false);
+          } catch (error) {
+            console.error('Error saving record:', error);
+            setLoading(false);
+          }
+        };
+      
     useEffect(() => {
       let isMounted = true;
     
       const checkNetworkAndUpload = async () => {
         if (!isMounted) return;
-    
-        const networkState = await Network.getNetworkStateAsync();
-        if (networkState.isConnected) {
-          for (const record of collections) {
-            const fieldCollectionsRef = collection(db, `Businesses/${record.businessId}/FieldCollections`);
-            await addDoc(fieldCollectionsRef, record);
+      
+        try {
+          const networkState = await Network.getNetworkStateAsync();
+          if (networkState.isConnected && collections.length > 0) {
+            const uploadedRecords = [];
+            for (const record of collections) {
+              try {
+                const fieldCollectionsRef = collection(db, `Businesses/${record.businessId}/FieldCollections`);
+                await addDoc(fieldCollectionsRef, record);
+                uploadedRecords.push(record);
+              } catch (error) {
+                console.error('Error uploading record:', error);
+              }
+            }
+            // Remove only the successfully uploaded records
+            dispatch(setCollections(collections.filter(record => !uploadedRecords.includes(record))));
+            console.log(`${uploadedRecords.length} records uploaded to database`);
           }
-          dispatch(setCollections([]));
-          // console.log('Records uploaded to database');
+        } catch (error) {
+          console.error('Error checking network or uploading:', error);
         }
       };
     
