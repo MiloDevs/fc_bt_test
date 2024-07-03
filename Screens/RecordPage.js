@@ -204,6 +204,12 @@ const RecordPage = ({route, navigation}) => {
         receiptData += '\n';
         receiptData += '\n';
         receiptData += '\n';
+        receiptData += '\n';
+        receiptData += '\n';
+        receiptData += '\n';
+        receiptData += '\n';
+        receiptData += '\n';
+        receiptData += '\n';
     
         // Send receipt data to the printer
         console.log(receiptData);

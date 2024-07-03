@@ -103,12 +103,12 @@ const SettingsPage = () => {
       {lookingForDevices && (
         <ScrollView style={styles.deviceList}>
           <View style={styles.deviceListContainer}>
-            <LottieView
+            {/* <LottieView
               source={require("../Assets/bt.json")}
               autoPlay
               loop
               style={{ width: 100, height: 100 }}
-            />
+            /> */}
             <Text>Please select your {deviceType}</Text>
             {devices.map((device) => (
               <TouchableOpacity
