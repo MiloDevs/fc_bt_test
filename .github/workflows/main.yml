@@ -43,7 +43,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: global
-          aws-endpoint: https://s3.tebi.io
-      - name: Upload to S3
+      - name: Upload to Tebi S3
         run: |
-          aws s3 cp ${{ github.workspace }}/app-release.apk s3://default-milo/app-release.apk
+          aws s3 cp ${{ github.workspace }}/app-release.apk s3://default-milo/app-release.apk --endpoint-url https://s3.tebi.io
