@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "icon": "./Assets/icon.png",
+    "icon": "./assets/images/icon.png",
 
     "ios": {
       "supportsTablet": true
