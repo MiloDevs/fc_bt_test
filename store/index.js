@@ -9,6 +9,11 @@ export const initialState = {
     printerAddress: "",
     BusinessId: "",
     records: 0,
+    collectionRecords: {
+        daily: 0,
+        weekly: 0,
+        monthly: 0,
+    },
     collections: [],
     suppliers: [],
     products: [],
@@ -48,12 +53,15 @@ const settingsSlice = createSlice({
         setLocations(state, action) {
             state.locations = action.payload;
         },
+        setCollectionRecords(state, action) {
+            state.collectionRecords = action.payload;
+        },
     },
     
 });
 
 
 // export the actions
-export const { setScaleAddress, setPrinterAddress, setLoggedIn, setUser, setBusinessId, setSuppliers, setProducts, setLocations, setCollections } = settingsSlice.actions;
+export const { setScaleAddress, setPrinterAddress, setLoggedIn, setUser, setBusinessId, setSuppliers, setProducts, setLocations, setCollections, setCollectionRecords } = settingsSlice.actions;
 
 export default settingsSlice.reducer;

@@ -28,7 +28,8 @@ const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
 const SettingsPage = () => {
-  const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
+  const { scanForDevices, devices, connectToDevice, connectedDevice } =
+    useBluetooth();
   const [lookingForDevices, setLookingForDevices] = useState(false);
   const [deviceType, setDeviceType] = useState(null); // 'scale' or 'printer'
   const [connecting, setConnecting] = useState(false);
@@ -61,7 +62,10 @@ const SettingsPage = () => {
       ToastAndroid.show(`Connected to ${deviceType}`, ToastAndroid.SHORT);
     } catch (e) {
       console.log(`Error connecting to ${deviceType}:`, e);
-      ToastAndroid.show(`Error connecting to ${deviceType}`, ToastAndroid.SHORT);
+      ToastAndroid.show(
+        `Error connecting to ${deviceType}`,
+        ToastAndroid.SHORT
+      );
     } finally {
       setConnecting(false);
       setLookingForDevices(false);
@@ -69,12 +73,15 @@ const SettingsPage = () => {
     }
   };
 
-  const handleSignOut = () => {
-    dispatch(setLoggedIn(false));
-    dispatch(setUser(null));
-    navigation.navigate("LoginPage");
-    ToastAndroid.show("Signed out", ToastAndroid.SHORT);
-  };
+ const handleSignOut = () => {
+   dispatch(setLoggedIn(false));
+   dispatch(setUser(null));
+   navigation.reset({
+     index: 0,
+     routes: [{ name: "LoginPage" }],
+   });
+   ToastAndroid.show("Signed out", ToastAndroid.SHORT);
+ };
 
   return (
     <View style={styles.container}>
@@ -101,15 +108,14 @@ const SettingsPage = () => {
       </TouchableOpacity>
 
       {lookingForDevices && (
-        <ScrollView style={styles.deviceList}>
-          <View style={styles.deviceListContainer}>
-            {/* <LottieView
-              source={require("../Assets/bt.json")}
-              autoPlay
-              loop
-              style={{ width: 100, height: 100 }}
-            /> */}
-            <Text>Please select your {deviceType}</Text>
+        <View style={styles.deviceListWrapper}>
+          <Text style={styles.deviceListTitle}>
+            Please select your {deviceType}
+          </Text>
+          <ScrollView
+            style={styles.deviceList}
+            contentContainerStyle={styles.deviceListContent}
+          >
             {devices.map((device) => (
               <TouchableOpacity
                 key={device.address}
@@ -119,8 +125,8 @@ const SettingsPage = () => {
                 <Text>{device.name || device.address}</Text>
               </TouchableOpacity>
             ))}
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       )}
 
       <View style={styles.signOutContainer}>
@@ -159,13 +165,20 @@ const styles = StyleSheet.create({
     marginRight: 20,
     fontFamily: "Poppins-Regular",
   },
-  deviceList: {
+  deviceListWrapper: {
     width: "80%",
-  },
-  deviceListContainer: {
-    width: screenWidth * 0.8,
-    alignItems: "center",
     maxHeight: screenHeight * 0.4,
+    marginVertical: 10,
+  },
+  deviceListTitle: {
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  deviceList: {
+    width: "100%",
+  },
+  deviceListContent: {
+    flexGrow: 1,
   },
   deviceItem: {
     padding: 10,

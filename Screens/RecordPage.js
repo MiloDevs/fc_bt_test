@@ -12,6 +12,7 @@ import { store } from '../store/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSuppliers, setCollections } from "../store";
 import RNBluetooth from "react-native-bluetooth-classic";
+import { ToastAndroid } from 'react-native';
 
 
 const screenWidth = Dimensions.get('window').width;
@@ -230,6 +231,32 @@ const RecordPage = ({route, navigation}) => {
 
     const handleSaveRecord = async () => {
       setLoading(true);
+        if (location === null) {
+          ToastAndroid.show(
+            "Please go back and select a location",
+            ToastAndroid.SHORT
+          );
+          setLoading(false);
+          return;
+        }
+        if (product === null) {
+          ToastAndroid.show(
+            "Please go back and select a product",
+            ToastAndroid.SHORT
+          );
+          setLoading(false);
+          return;
+        }
+      if (selectedSupplier === null) {
+        ToastAndroid.show('Please select a supplier', ToastAndroid.SHORT);
+        setLoading(false);
+        return;
+      }
+      if (products.length === 0) {
+        ToastAndroid.show('Please capture at least one product', ToastAndroid.SHORT);
+        setLoading(false);
+        return;
+      }
       try {
         const businessId = store.getState().settings.BusinessId;
         console.log('Business ID:', businessId);
@@ -251,15 +278,18 @@ const RecordPage = ({route, navigation}) => {
           const fieldCollectionsRef = collection(db, `Businesses/${businessId}/FieldCollections`);
           const docRef = await addDoc(fieldCollectionsRef, newRecord);
           console.log('Record saved successfully:', docRef.id);
+          ToastAndroid.show('Record saved successfully', ToastAndroid.SHORT);
         } else {
           dispatch(setCollections([...collections, newRecord]));
           console.log('Record saved to Redux store');
+          ToastAndroid.show('Record saved to local storage', ToastAndroid.SHORT);
         }
   
         setModalVisible(true);
         setLoading(false);
       } catch (error) {
         console.error('Error saving record:', error);
+        ToastAndroid.show('Error saving record. Please try again.', ToastAndroid.SHORT);
         setLoading(false);
       }
     };
@@ -323,22 +353,19 @@ const RecordPage = ({route, navigation}) => {
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View style={styles.modalNav}>
-                <TouchableOpacity
-                  style={styles.modaltouchable}
-                  onPress={showSendBySMS}
-                >
-                  <AntDesign name="book" size={24} color="black" />
-                  <Text style={styles.touchableText}>Send By SMS</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modaltouchable}
-                  onPress={showPrintReceipt}
-                >
-                  <AntDesign name="printer" size={24} color="black" />
-                  <Text style={styles.touchableText}>Print Receipt</Text>
-                </TouchableOpacity>
+                  <View style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 10,
+                      borderBottomColor: '#2BFF2B',
+                      borderBottomWidth: 2,
+                      width: "100%",
+                      flexDirection: 'row'
+                  }}>
+                    <Text style={styles.touchableText}>Print Receipt</Text>
+                  </View>
               </View>
-              {isSendBySMS ? (
+              {!isSendBySMS ? (
                 <View style={styles.modalContent}>
                   <TextInput placeholder="+254" style={styles.modalInput} />
                   <TouchableOpacity style={styles.Button}>
@@ -352,7 +379,7 @@ const RecordPage = ({route, navigation}) => {
                     onPress={handleSwitchBt}
                   >
                     <AntDesign name="printer" size={34} color="blue" />
-                    <Text style={styles.textButton}>Printer Connected</Text>
+                    <Text style={styles.textButton}>Reconnect printer</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.Button}
@@ -398,7 +425,7 @@ const RecordPage = ({route, navigation}) => {
           </View>
         </View>
         <TouchableOpacity style={styles.Button} onPress={() => {
-            setProducts([...products, { ...product , quantity: 1, weight: parseFloat((receivedData || "").toString().match(/[+-]?\d*\.?\d+/g)?.join(', ')) }]);
+            setProducts([...products, { ...product , quantity: 1, weight: parseFloat((receivedData || "0.00").toString().match(/[+-]?\d*\.?\d+/g)?.join(', ')) }]);
             setQuantity(0);
         }}>
           <Text style={styles.textButton}>Capture</Text>
@@ -498,6 +525,7 @@ const styles = StyleSheet.create({
     touchableText: {
         fontFamily: 'Poppins-Regular',
         fontSize: 20,
+        textAlign: 'center',
         fontWeight: '400'
     },
     modalContent: {
@@ -537,7 +565,7 @@ const styles = StyleSheet.create({
     Button: {
         width: screenWidth * 0.8,
         backgroundColor: '#F2F2F2',
-        padding: 20,
+        padding: 15,
         alignItems: 'center',
         margin: 10,
         borderRadius: 20,
