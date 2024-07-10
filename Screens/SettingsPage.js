@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import {
   AntDesign,
-  MaterialCommunityIcons,
   Octicons,
 } from "@expo/vector-icons";
 import { useBluetooth } from "rn-bluetooth-classic";
@@ -21,15 +20,13 @@ import {
   setLoggedIn,
   setUser,
 } from "../store/index";
-import LottieView from "lottie-react-native";
 import { useNavigation } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
 const SettingsPage = () => {
-  const { scanForDevices, devices, connectToDevice, connectedDevice } =
-    useBluetooth();
+  const { scanForDevices, devices, connectToDevice, connectedDevice } = useBluetooth();
   const [lookingForDevices, setLookingForDevices] = useState(false);
   const [deviceType, setDeviceType] = useState(null); // 'scale' or 'printer'
   const [connecting, setConnecting] = useState(false);
