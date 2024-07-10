@@ -201,11 +201,7 @@ const RecordPage = ({route, navigation}) => {
         receiptData += '\n';
         receiptData += '\n';
         receiptData += '\n';
-        receiptData += '\n';
-        receiptData += '\n';
-        receiptData += '\n';
-        receiptData += '\n';
-        receiptData += '\n';
+      
     
         // Send receipt data to the printer
         console.log(receiptData);
@@ -376,11 +372,21 @@ const RecordPage = ({route, navigation}) => {
                 <View style={styles.modalContent}>
                   <TouchableOpacity 
                     style={styles.Button}
-                    onPress={handleSwitchBt}
+                    onPress={() => {
+                      const printer = store.getState().settings.printerAddress;
+                      if (!printer) {
+                        ToastAndroid.show(
+                          "Please go to settings to connect Printer",
+                          ToastAndroid.SHORT
+                        ); // Showing a toast message if no printer address is available
+                        return;
+                      }
+                      handleSwitchBt; // Connecting to the printer device
+                    }}
                   >
                     <AntDesign name="printer" size={34} color="blue" />
                     <Text style={styles.textButton}>Reconnect printer</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity>                  
                   <TouchableOpacity
                     style={styles.Button}
                     onPress={showPrinterReceipt}
