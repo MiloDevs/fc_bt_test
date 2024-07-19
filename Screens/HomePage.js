@@ -71,6 +71,7 @@ const HomePage = () => {
       // Setting the products data for the dropdown component
       setProductsData(
         mergedProducts.map((product) => ({
+          price: product.price,
           label: product.name,
           value: product.id,
         }))

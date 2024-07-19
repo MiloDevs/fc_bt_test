@@ -5,6 +5,7 @@ import { useFonts } from "expo-font";
 import { Provider } from "react-redux";
 import { store, persistor } from "../store/store";
 import { PersistGate } from "redux-persist/integration/react";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 
 export default function Root() {
@@ -24,11 +25,13 @@ export default function Root() {
 
     return(
         <BluetoothProvider>
+            <BottomSheetModalProvider>
             <Provider store={store}>
                 <PersistGate persistor={persistor} loading={null}>
                     <MyStack />
                 </PersistGate>
             </Provider>
+            </BottomSheetModalProvider>
         </BluetoothProvider>
     );    
 }

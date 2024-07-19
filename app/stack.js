@@ -7,6 +7,7 @@ import RecordPage from "../Screens/RecordPage";
 import SettingsPage from "../Screens/SettingsPage";
 import LoginPage from "../Screens/LoginPage";
 import { store } from "../store/store";
+import AdvancementsPage from "../Screens/AdvancementsPage";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -42,6 +43,11 @@ export function MyStack() {
       <Stack.Screen
         name="RecordPage"
         component={RecordPage}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdvancementsPage"
+        component={AdvancementsPage}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

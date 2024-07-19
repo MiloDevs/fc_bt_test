@@ -1,26 +1,40 @@
-import * as Network from 'expo-network';
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, ToastAndroid } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
-import DropdownComponent from '../Components/DropDown';
-import Header from '../Components/Header';
+import * as Network from "expo-network";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
+import React, { useState, useEffect } from "react";
+import DropdownComponent from "../Components/DropDown";
+import { Button } from "react-native-paper";
+import Header from "../Components/Header";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { useBluetooth } from 'rn-bluetooth-classic';
-import { addDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from '../Database/config';
-import { store } from '../store/store';
-import { useDispatch, useSelector } from 'react-redux';
+import { useBluetooth } from "rn-bluetooth-classic";
+import { addDoc, collection, doc, getDocs } from "firebase/firestore";
+import { db } from "../Database/config";
+import { store } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
 import { setSuppliers, setCollections } from "../store";
-import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import RNBluetooth from "react-native-bluetooth-classic";
+import { ToastAndroid } from "react-native";
 
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
+const screenWidth = Dimensions.get("window").width;
+const screenHeight = Dimensions.get("window").height;
 
-const RecordPage = ({ route, navigation }) => {
+const AdvancementsPage = ({ route, navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [isSendBySMS, setIsSendBySMS] = useState(true);
   const [connectedDevice, setConnectedDevice] = useState(null);
   const [scaleStability, setScaleStability] = useState(null);
   const { location, product } = route.params;
   const [products, setProducts] = useState([]);
+  const [quantity, setQuantity] = useState(0);
   const [loading, setLoading] = useState(false);
   const {
     devices,
@@ -37,20 +51,11 @@ const RecordPage = ({ route, navigation }) => {
   const [totalWeight, setTotalWeight] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
   const collections = useSelector((state) => state.settings.collections);
+
   const suppliers = store.getState().settings.suppliers;
   const BusinessId = store.getState().settings.BusinessId;
+
   const user = store.getState().settings.user;
-
-  // Advancements state
-  const [advanceAmount, setAdvanceAmount] = useState("");
-  const [barterItem, setBarterItem] = useState("");
-  const [barterQuantity, setBarterQuantity] = useState("");
-  const [advanceType, setAdvanceType] = useState("cash");
-  const [advancements, setAdvancements] = useState([]);
-  const [totalAdvanced, setTotalAdvanced] = useState(0);
-
-  const bottomSheetModalRef = useRef(null);
-  const barterProducts = useSelector((state) => state.settings.barterProducts);
 
   const fieldCollectionData = {
     supplier: {
@@ -76,6 +81,8 @@ const RecordPage = ({ route, navigation }) => {
   useEffect(() => {
     console.log(location, product);
   }, [navigation]);
+
+  console.log(BusinessId);
 
   const getSuppliers = async () => {
     const suppliersCollection = collection(
@@ -114,6 +121,8 @@ const RecordPage = ({ route, navigation }) => {
         value: supplier.id,
       }))
     : [];
+
+  console.log(receivedData);
 
   useEffect(() => {
     if (connectedDevice) {
@@ -160,6 +169,14 @@ const RecordPage = ({ route, navigation }) => {
     };
   };
 
+  const showSendBySMS = () => {
+    setIsSendBySMS(true);
+  };
+
+  const showPrintReceipt = () => {
+    setIsSendBySMS(false);
+  };
+
   const handleSwitchBt = async () => {
     const printer = store.getState().settings.printerAddress;
     connectToDevice(printer);
@@ -176,6 +193,7 @@ const RecordPage = ({ route, navigation }) => {
     const items = products;
     const server = fieldCollectionData.clerk.name;
 
+    // Generate receipt data
     let receiptData = "";
     receiptData += "Weighing Receipt\n";
     receiptData += `Supplier: ${supplier}  #: ${supplierID}\n`;
@@ -199,13 +217,15 @@ const RecordPage = ({ route, navigation }) => {
       .padStart(2)} ${totalWeight.toString().padStart(9)} ${totalPrice
       .toString()
       .padStart(6)}\n`;
-    receiptData += `Total Advanced: ${totalAdvanced.toFixed(2)}\n`;
-    receiptData += `Remaining: ${(totalPrice - totalAdvanced).toFixed(2)}\n`;
     receiptData += "\n";
     receiptData += `Served by: ${server}\n`;
     receiptData += "Thank you for your business!\n";
-    receiptData += "\n\n\n\n";
+    receiptData += "\n";
+    receiptData += "\n";
+    receiptData += "\n";
+    receiptData += "\n";
 
+    // Send receipt data to the printer
     console.log(receiptData);
 
     const printer = store.getState().settings.printerAddress;
@@ -278,10 +298,9 @@ const RecordPage = ({ route, navigation }) => {
         products,
         quantity: totalQuantity,
         weight: totalWeight,
-        advancements,
-        totalAdvanced,
       };
 
+      // Check network connectivity
       const networkState = await Network.getNetworkStateAsync();
       if (networkState.isConnected) {
         const fieldCollectionsRef = collection(
@@ -331,6 +350,7 @@ const RecordPage = ({ route, navigation }) => {
               console.error("Error uploading record:", error);
             }
           }
+          // Remove only the successfully uploaded records
           dispatch(
             setCollections(
               collections.filter((record) => !uploadedRecords.includes(record))
@@ -343,6 +363,7 @@ const RecordPage = ({ route, navigation }) => {
       }
     };
 
+    // Check network state periodically
     const intervalId = setInterval(checkNetworkAndUpload, 10000);
 
     return () => {
@@ -351,82 +372,44 @@ const RecordPage = ({ route, navigation }) => {
     };
   }, [collections]);
 
-  // Advancements functions
-  const openAdvancementModal = () => {
-    bottomSheetModalRef.current?.present();
-  };
-
-  const handleAdvancement = () => {
-    if (advanceType === "cash") {
-      if (isNaN(parseFloat(advanceAmount)) || parseFloat(advanceAmount) <= 0) {
-        ToastAndroid.show("Please enter a valid amount", ToastAndroid.SHORT);
-        return;
-      }
-      const newAdvance = { type: "cash", amount: parseFloat(advanceAmount) };
-      setAdvancements([...advancements, newAdvance]);
-    } else {
-      if (
-        !barterItem ||
-        isNaN(parseFloat(barterQuantity)) ||
-        parseFloat(barterQuantity) <= 0
-      ) {
-        ToastAndroid.show(
-          "Please enter valid barter details",
-          ToastAndroid.SHORT
-        );
-        return;
-      }
-      const newAdvance = {
-        type: "barter",
-        item: barterItem,
-        quantity: parseFloat(barterQuantity),
-      };
-      setAdvancements([...advancements, newAdvance]);
-    }
-
-    bottomSheetModalRef.current?.dismiss();
-    setAdvanceAmount("");
-    setBarterItem("");
-    setBarterQuantity("");
-  };
-
-  useEffect(() => {
-    const newTotalAdvanced = advancements.reduce((sum, adv) => {
-      if (adv.type === "cash") {
-        return sum + parseFloat(adv.amount);
-      } else {
-        const barterProduct = barterProducts.find((bp) => bp.name === adv.item);
-        return sum + parseFloat(adv.quantity) * barterProduct.price;
-      }
-    }, 0);
-    setTotalAdvanced(newTotalAdvanced);
-  }, [advancements]);
-
   return (
-      <View style={styles.Container}>
-        <Header refresh={refreshing} handleClick={onRefresh} />
-        <DropdownComponent
-          title="Suppliers"
-          onChange={(value) => {
-            console.log(value);
-            setSelectedSupplier(value);
-          }}
-          data={supplierData}
-        />
+    <View style={styles.Container}>
+       <Text style={styles.title}>Advancements</Text>
+       <Text style={styles.title}>Cash Advancement</Text>
+      <TextInput style={styles.input} keyboardType="number-pad" placeholder="Input Amount"></TextInput>
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={closeModal}
-        >
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <View style={styles.modalNav}>
-                <View style={styles.modaltouchable}>
-                  <Text style={styles.touchableText}>Print Receipt</Text>
-                </View>
+      <Text style={styles.title}>Dukawala Advancement</Text>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <View style={styles.modalNav}>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 10,
+                  borderBottomColor: "#2BFF2B",
+                  borderBottomWidth: 2,
+                  width: "100%",
+                  flexDirection: "row",
+                }}
+              >
+                <Text style={styles.touchableText}>Print Receipt</Text>
               </View>
+            </View>
+            {!isSendBySMS ? (
+              <View style={styles.modalContent}>
+                <TextInput placeholder="+254" style={styles.modalInput} />
+                <TouchableOpacity style={styles.Button}>
+                  <Text style={styles.textButton}>Send</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
               <View style={styles.modalContent}>
                 <TouchableOpacity
                   style={styles.Button}
@@ -436,10 +419,10 @@ const RecordPage = ({ route, navigation }) => {
                       ToastAndroid.show(
                         "Please go to settings to connect Printer",
                         ToastAndroid.SHORT
-                      );
+                      ); // Showing a toast message if no printer address is available
                       return;
                     }
-                    handleSwitchBt();
+                    handleSwitchBt; // Connecting to the printer device
                   }}
                 >
                   <AntDesign name="printer" size={34} color="blue" />
@@ -452,184 +435,107 @@ const RecordPage = ({ route, navigation }) => {
                   <Text style={styles.textButton}>Print</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          </View>
-        </Modal>
-        <View
-          style={[
-            styles.display,
-            {
-              backgroundColor:
-                receivedData.split(",")[0] === "ST" ? "green" : "red",
-            },
-          ]}
-        >
-          <View style={styles.data}>
-            <Text style={styles.textBold}>Scale Connected:</Text>
-            <Text style={styles.textRegular}>
-              {isConnected
-                ? `${connectedDevice.name} (${connectedDevice.address})`
-                : "Scale Not Connected"}
-            </Text>
-            <Text style={styles.textBold}>Scale Stability:</Text>
-            <Text style={[styles.textRegular]}>
-              {parseBluetoothData(receivedData).isStable
-                ? "Stable"
-                : "Unstable"}
-            </Text>
-          </View>
-          <View>
-            <Text style={styles.textWeight}>
-              {(receivedData || "")
-                .toString()
-                .match(/[+-]?\d*\.?\d+/g)
-                ?.join(", ")}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.Button}
-          onPress={() => {
-            setProducts([
-              ...products,
-              {
-                ...product,
-                quantity: 1,
-                weight: parseFloat(
-                  (receivedData || "0.00")
-                    .toString()
-                    .match(/[+-]?\d*\.?\d+/g)
-                    ?.join(", ")
-                ),
-              },
-            ]);
-          }}
-        >
-          <Text style={styles.textButton}>Capture</Text>
-        </TouchableOpacity>
-        <View style={styles.preview}>
-          <Text style={styles.textButton}>Records</Text>
-          <ScrollView style={styles.scroll}>
-            <View style={styles.table}>
-              <View style={styles.tableRow}>
-                <Text style={styles.tableHeader}>Item</Text>
-                <Text style={styles.tableHeader}>Quantity</Text>
-                <Text style={styles.tableHeader}>Weight</Text>
-              </View>
-              {products.map((item, index) => (
-                <View style={styles.tableRow} key={index}>
-                  <Text style={styles.tableCell}>{item.label}</Text>
-                  <Text style={styles.tableCell}>{item.quantity}</Text>
-                  <Text style={styles.tableCell}>{item.weight}</Text>
-                </View>
-              ))}
-              <View style={styles.totalRow}>
-                <Text style={styles.tableCell}>Total</Text>
-                <Text style={styles.tableCell}>{totalQuantity}</Text>
-                <Text style={styles.tableCell}>{totalWeight}</Text>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-
-        <TouchableOpacity style={styles.Button} onPress={openAdvancementModal}>
-          <Text style={styles.textButton}>Add Advancement</Text>
-        </TouchableOpacity>
-
-        <View style={styles.advancementSummary}>
-          <Text style={styles.summaryText}>
-            Total Price: {totalPrice.toFixed(2)}
-          </Text>
-          <Text style={styles.summaryText}>
-            Total Advanced: {totalAdvanced.toFixed(2)}
-          </Text>
-          <Text style={styles.summaryText}>
-            Remaining: {(totalPrice - totalAdvanced).toFixed(2)}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.Button}
-          onPress={() => handleSaveRecord()}
-        >
-          {loading ? (
-            <ActivityIndicator color="#00FF00" />
-          ) : (
-            <Text style={styles.textButton}>Save Record</Text>
-          )}
-        </TouchableOpacity>
-
-        <BottomSheetModal
-          ref={bottomSheetModalRef}
-          index={0}
-          snapPoints={["50%", "75%"]}
-        >
-          <View style={styles.bottomSheetContent}>
-            <Text style={styles.modalTitle}>Add Advancement</Text>
-
-            <View style={styles.advanceTypeSelection}>
-              <TouchableOpacity
-                style={[
-                  styles.advanceTypeButton,
-                  advanceType === "cash" && styles.selectedAdvanceType,
-                ]}
-                onPress={() => setAdvanceType("cash")}
-              >
-                <Text>Cash</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.advanceTypeButton,
-                  advanceType === "barter" && styles.selectedAdvanceType,
-                ]}
-                onPress={() => setAdvanceType("barter")}
-              >
-                <Text>Dukawala (Barter)</Text>
-              </TouchableOpacity>
-            </View>
-
-            {advanceType === "cash" ? (
-              <TextInput
-                style={styles.input}
-                placeholder="Enter cash amount"
-                value={advanceAmount}
-                onChangeText={setAdvanceAmount}
-                keyboardType="numeric"
-              />
-            ) : (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter barter item"
-                  value={barterItem}
-                  onChangeText={setBarterItem}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter quantity"
-                  value={barterQuantity}
-                  onChangeText={setBarterQuantity}
-                  keyboardType="numeric"
-                />
-              </>
             )}
-
-            <TouchableOpacity
-              style={styles.advanceButton}
-              onPress={handleAdvancement}
-            >
-              <Text style={styles.advanceButtonText}>Confirm Advancement</Text>
-            </TouchableOpacity>
           </View>
-        </BottomSheetModal>
+        </View>
+      </Modal>
+
+      <DropdownComponent label="Select Product"  data={supplierData} />
+      <View
+        style={[
+          styles.display,
+          {
+            backgroundColor:
+              receivedData.split(",")[0] === "ST" ? "green" : "red",
+          },
+        ]}
+      >
+        <View style={styles.data}>
+          <Text style={styles.textBold}>Scale Connected:</Text>
+          <Text style={styles.textRegular}>
+            {isConnected
+              ? `${connectedDevice.name} (${connectedDevice.address})`
+              : "Scale Not Connected"}
+          </Text>
+          <Text style={styles.textBold}>Scale Stability:</Text>
+          <Text style={[styles.textRegular]}>
+            {parseBluetoothData(receivedData).isStable ? "Stable" : "Unstable"}
+          </Text>
+        </View>
+        <View>
+          <Text style={styles.textWeight}>
+            {(receivedData || "")
+              .toString()
+              .match(/[+-]?\d*\.?\d+/g)
+              ?.join(", ")}
+          </Text>
+        </View>
       </View>
+      <TouchableOpacity
+        style={styles.Button}
+        onPress={() => {
+          setProducts([
+            ...products,
+            {
+              ...product,
+              quantity: 1,
+              weight: parseFloat(
+                (receivedData || "0.00")
+                  .toString()
+                  .match(/[+-]?\d*\.?\d+/g)
+                  ?.join(", ")
+              ),
+            },
+          ]);
+          setQuantity(0);
+        }}
+      >
+        <Text style={styles.textButton}>Capture</Text>
+      </TouchableOpacity>
+      {/* <View style={styles.preview}>
+        <Text style={styles.textButton}>Records</Text>
+        <ScrollView style={styles.scroll}>
+          <View style={styles.table}>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableHeader}>Item</Text>
+              <Text style={styles.tableHeader}>Quantity</Text>
+              <Text style={styles.tableHeader}>Weight</Text>
+            </View>
+            {products.map((item, index) => (
+              <View style={styles.tableRow} key={index}>
+                <Text style={styles.tableCell}>{item.label}</Text>
+                <Text style={styles.tableCell}>{item.quantity}</Text>
+                <Text style={styles.tableCell}>{item.weight}</Text>
+              </View>
+            ))}
+            <View style={styles.totalRow}>
+              <Text style={styles.tableCell}>Total</Text>
+              <Text style={styles.tableCell}>{totalQuantity}</Text>
+              <Text style={styles.tableCell}>{totalWeight}</Text>
+            </View>
+          </View>
+        </ScrollView>
+      </View> */}
+      <TouchableOpacity
+        style={styles.Button}
+        onPress={() => handleSaveRecord()}
+      >
+        {loading ? (
+          <ActivityIndicator color="#00FF00" />
+        ) : (
+          <Text style={styles.textButton}>Save Record</Text>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 };
+
+export default AdvancementsPage;
 
 const styles = StyleSheet.create({
   Container: {
     alignItems: "center",
-    padding: 50,
+    padding: 20,
     backgroundColor: "#F9F9F9",
     width: screenWidth,
     height: screenHeight,
@@ -665,6 +571,16 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: screenWidth * 0.9,
   },
+  input: {
+    width: "100%",
+    height: 50,
+    borderColor: "#C4C4C4",
+    borderWidth: 1,
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    marginVertical: 10,
+    fontFamily: "Poppins-Regular",
+  },
   modalNav: {
     flexDirection: "row",
     padding: 5,
@@ -675,7 +591,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomColor: "#2BFF2B",
     borderBottomWidth: 2,
-    width: "100%",
+    width: screenWidth * 0.4,
     flexDirection: "row",
   },
   touchableText: {
@@ -687,6 +603,36 @@ const styles = StyleSheet.create({
   modalContent: {
     alignItems: "center",
     padding: 10,
+  },
+  modalInput: {
+    width: screenWidth * 0.8,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: "#8F8F8F",
+    borderRadius: 10,
+    fontFamily: "Poppins-Regular",
+    fontSize: 20,
+    marginBottom: 40,
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: "#2196F3",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  data: {
+    flexDirection: "column",
   },
   Button: {
     width: screenWidth * 0.8,
@@ -762,59 +708,4 @@ const styles = StyleSheet.create({
     borderTopColor: "#ccc",
     backgroundColor: "#f0f0f0",
   },
-  bottomSheetContent: {
-    flex: 1,
-    alignItems: "center",
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  advanceTypeSelection: {
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  advanceTypeButton: {
-    padding: 10,
-    marginHorizontal: 10,
-    borderWidth: 1,
-    borderRadius: 5,
-  },
-  selectedAdvanceType: {
-    backgroundColor: "#e0e0e0",
-  },
-  input: {
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  advanceButton: {
-    backgroundColor: "#2BFF2B",
-    padding: 15,
-    borderRadius: 5,
-    marginTop: 20,
-  },
-  advanceButtonText: {
-    color: "#000000",
-    fontWeight: "bold",
-  },
-  advancementSummary: {
-    width: screenWidth * 0.8,
-    backgroundColor: "#F2F2F2",
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
-  },
-  summaryText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 16,
-    marginBottom: 5,
-  },
 });
-
-export default RecordPage;

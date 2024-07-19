@@ -2,7 +2,7 @@ name: Android Development Build
 on:
   push:
     branches:
-      - redux
+      - dev
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -48,4 +48,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: global
         run: |
-          aws s3 cp ${{ github.workspace }}/app-release.apk s3://default-milo/app-release.apk --endpoint-url https://s3.tebi.io
+          aws s3 cp ${{ github.workspace }}/app-release.apk s3://default-milo/test-app.apk --endpoint-url https://s3.tebi.io
