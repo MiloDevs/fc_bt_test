@@ -1,5 +1,5 @@
 {
-  "name": "bt_test",
+  "name": "FCS App",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -33,13 +33,13 @@
     "expo-network": "^6.0.1",
     "expo-router": "~3.5.16",
     "expo-status-bar": "~1.12.1",
-    "expo-system-ui": "~3.0.6",
+    "expo-system-ui": "~3.0.7",
     "expo-web-browser": "~13.0.3",
     "firebase": "^10.12.2",
     "lottie-react-native": "6.7.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.74.2",
+    "react-native": "0.74.3",
     "react-native-bluetooth-classic": "^1.73.0-rc.8",
     "react-native-element-dropdown": "^2.12.0",
     "react-native-esc-pos-printer": "^3.1.1",

@@ -9,13 +9,13 @@ import { PersistGate } from "redux-persist/integration/react";
 
 export default function Root() {
     const [loaded] = useFonts({
-        "Poppins-Regular": require("../Assets/Fonts/Poppins-Regular.ttf"),
-        "Poppins-Medium": require("../Assets/Fonts/Poppins-Medium.ttf"),
-        "Poppins-Light": require("../Assets/Fonts/Poppins-Light.ttf"),
-        "Poppins-Black": require("../Assets/Fonts/Poppins-Black.ttf"),
-        "Poppins-Bold": require("../Assets/Fonts/Poppins-Bold.ttf"),
-        "Poppins-SemiBold": require("../Assets/Fonts/Poppins-SemiBold.ttf"),
-        "Poppins-ExtraBold": require("../Assets/Fonts/Poppins-ExtraBold.ttf")
+        "Poppins-Regular": require("../assets/Fonts/Poppins-Regular.ttf"),
+        "Poppins-Medium": require("../assets/Fonts/Poppins-Medium.ttf"),
+        "Poppins-Light": require("../assets/Fonts/Poppins-Light.ttf"),
+        "Poppins-Black": require("../assets/Fonts/Poppins-Black.ttf"),
+        "Poppins-Bold": require("../assets/Fonts/Poppins-Bold.ttf"),
+        "Poppins-SemiBold": require("../assets/Fonts/Poppins-SemiBold.ttf"),
+        "Poppins-ExtraBold": require("../assets/Fonts/Poppins-ExtraBold.ttf")
     });
 
     if (!loaded) {
