@@ -1,6 +1,6 @@
 import * as Network from 'expo-network';
 import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, ToastAndroid } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import DropdownComponent from '../Components/DropDown';
 import Header from '../Components/Header';
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -12,16 +12,36 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSuppliers, setCollections } from "../store";
 import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const RecordPage = ({ route, navigation }) => {
+  const { location, product, productsData } = route.params;
+  const dispatch = useDispatch();
+  const collections = useSelector((state) => state.settings.collections);
+  const suppliers = useSelector((state) => state.settings.suppliers);
+  const { BusinessId, user } = useSelector((state) => state.settings);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [connectedDevice, setConnectedDevice] = useState(null);
   const [scaleStability, setScaleStability] = useState(null);
-  const { location, product } = route.params;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [totalQuantity, setTotalQuantity] = useState(0);
+  const [totalWeight, setTotalWeight] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  // Advancements state
+  const [advanceAmount, setAdvanceAmount] = useState("");
+  const [barterItem, setBarterItem] = useState(null);
+  const [barterWeight, setBarterWeight] = useState("");
+  const [advanceType, setAdvanceType] = useState("cash");
+  const [advancements, setAdvancements] = useState([]);
+  const [totalAdvanced, setTotalAdvanced] = useState(0);
+
+  const bottomSheetModalRef = useRef(null);
+
   const {
     devices,
     connectToDevice,
@@ -30,52 +50,60 @@ const RecordPage = ({ route, navigation }) => {
     disconnectDevice,
     writeToDevice,
   } = useBluetooth();
-  const dispatch = useDispatch();
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [totalQuantity, setTotalQuantity] = useState(0);
-  const [totalWeight, setTotalWeight] = useState(0);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const collections = useSelector((state) => state.settings.collections);
-  const suppliers = store.getState().settings.suppliers;
-  const BusinessId = store.getState().settings.BusinessId;
-  const user = store.getState().settings.user;
 
-  // Advancements state
-  const [advanceAmount, setAdvanceAmount] = useState("");
-  const [barterItem, setBarterItem] = useState("");
-  const [barterQuantity, setBarterQuantity] = useState("");
-  const [advanceType, setAdvanceType] = useState("cash");
-  const [advancements, setAdvancements] = useState([]);
-  const [totalAdvanced, setTotalAdvanced] = useState(0);
-
-  const bottomSheetModalRef = useRef(null);
-  const barterProducts = useSelector((state) => state.settings.barterProducts);
-
-  const fieldCollectionData = {
-    supplier: {
-      id: selectedSupplier?.value,
-      name: selectedSupplier?.label,
-    },
-    clerk: {
-      id: user?.clerkId,
-      name: `${user?.fName} ${user?.lName}`,
-    },
-    location: {
-      name: location?.label,
-      subLocation: "Sub-Location A",
-    },
-    product: {
-      price: product?.price,
-      name: product?.label,
-      id: product?.id,
-    },
-    timestamp: new Date().toISOString(),
-  };
+  const fieldCollectionData = useMemo(
+    () => ({
+      supplier: {
+        id: selectedSupplier?.value,
+        name: selectedSupplier?.label,
+      },
+      clerk: {
+        id: user?.clerkId,
+        name: `${user?.fName} ${user?.lName}`,
+      },
+      location: {
+        name: location?.label,
+        subLocation: "Sub-Location A",
+      },
+      product: {
+        price: product?.price,
+        name: product?.label,
+        id: product?.value,
+      },
+      timestamp: new Date().toISOString(),
+    }),
+    [selectedSupplier, user, location, product]
+  );
 
   useEffect(() => {
-    console.log(location, product);
-  }, [navigation]);
+    getSuppliers();
+  }, []);
+  
+  useEffect(() => {
+    const newTotalQuantity = products.reduce(
+      (acc, item) => acc + parseInt(item.quantity),
+      0
+    );
+    const newTotalWeight = products.reduce(
+      (acc, item) => acc + parseFloat(item.weight),
+      0
+    );
+    const newTotalPrice = newTotalWeight * product.price;
+    setTotalQuantity(newTotalQuantity);
+    setTotalWeight(newTotalWeight.toFixed(2));
+    setTotalPrice(newTotalPrice.toFixed(2));
+  }, [products, product.price]);
+
+  useEffect(() => {
+    const newTotalAdvanced = advancements.reduce((sum, adv) => {
+      if (adv.type === "cash") {
+        return sum + parseFloat(adv.amount);
+      } else {
+        return sum + parseFloat(adv.item.price) * parseFloat(adv.weight);
+      }
+    }, 0);
+    setTotalAdvanced(newTotalAdvanced);
+  }, [advancements]);
 
   const getSuppliers = async () => {
     const suppliersCollection = collection(
@@ -83,16 +111,12 @@ const RecordPage = ({ route, navigation }) => {
       `Businesses/${BusinessId}/Suppliers`
     );
     const suppliersSnapshot = await getDocs(suppliersCollection);
-    const suppliers = suppliersSnapshot.docs.map((doc) => ({
+    const suppliersData = suppliersSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    dispatch(setSuppliers(suppliers));
+    dispatch(setSuppliers(suppliersData));
   };
-
-  useEffect(() => {
-    getSuppliers();
-  }, []);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -100,13 +124,7 @@ const RecordPage = ({ route, navigation }) => {
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
-  });
-
-  useEffect(() => {
-    if (selectedSupplier) {
-      fieldCollectionData.supplier = selectedSupplier;
-    }
-  }, [selectedSupplier]);
+  }, []);
 
   const supplierData = suppliers
     ? suppliers.map((supplier) => ({
@@ -114,31 +132,6 @@ const RecordPage = ({ route, navigation }) => {
         value: supplier.id,
       }))
     : [];
-
-  useEffect(() => {
-    if (connectedDevice) {
-      const readInterval = setInterval(async () => {
-        try {
-          const data = receivedData;
-          if (data) {
-            const textDecoder = new TextDecoder("ascii");
-            const decodedString = textDecoder.decode(data);
-
-            const parsedData = parseBluetoothData(decodedString);
-            if (parsedData) {
-              setScaleStability(parsedData.isStable ? "ST" : "US");
-            }
-          }
-          console.log(data);
-          console.log(parsedData);
-        } catch (error) {
-          console.error("Error reading data:", error);
-        }
-      }, 1000);
-
-      return () => clearInterval(readInterval);
-    }
-  });
 
   const parseBluetoothData = (data) => {
     const regex = /(?:(US|ST),GS,)(\+\d+\.\d+kg)/g;
@@ -175,118 +168,96 @@ const RecordPage = ({ route, navigation }) => {
     const product = fieldCollectionData.product.name;
     const items = products;
     const server = fieldCollectionData.clerk.name;
+    const separator = "-----------------------------\n";
 
     let receiptData = "";
-    receiptData += "Weighing Receipt\n";
-    receiptData += `Supplier: ${supplier}  #: ${supplierID}\n`;
-    receiptData += `Location: ${location}  ${sublocation}\n`;
-    receiptData += `Product: ${product}\n`;
-    receiptData += `Date: ${new Date().toLocaleDateString()}\n`;
-    receiptData += `Time: ${new Date().toLocaleTimeString()}\n`;
-    receiptData += "\n";
-    receiptData += "Item       Qty  Weight(Kg) Price\n";
+    receiptData += "====== Weighing Receipt =====\n\n";
+    receiptData += `Supplier: ${supplier.padEnd(10)} ID: ${supplierID}\n`;
+    receiptData += `Location: ${location.padEnd(10)}\n`;
+    receiptData += `Date: ${new Date()
+      .toLocaleDateString()
+      .padEnd(9)} Time: ${new Date().toLocaleTimeString()}\n\n`;
+
+    receiptData += "----------- Products -----------\n";
+    receiptData += "Product  Qty   Weight(Kg)  Price\n";
     items.forEach((item) => {
-      const { label, quantity, weight } = item;
-      receiptData += `${label.padEnd(8)} ${quantity
-        .toString()
-        .padStart(2)} ${weight.toString().padStart(9)} ${item.price
-        .toString()
-        .padStart(6)}\n`;
+      const { label, quantity, weight, price } = item;
+      const qty = parseInt(quantity, 10);
+      const wgt = parseFloat(weight);
+      const prc = parseFloat(price);
+      receiptData += `${label.padEnd(8)} ${qty.toString().padStart(2)} ${wgt
+        .toFixed(2)
+        .padStart(9)} ${prc.toFixed(2).padStart(10)}\n`;
+    });
+    receiptData += separator;
+    receiptData += `Total:${totalQuantity.toString().padStart(6)} ${parseFloat(
+      totalWeight
+    )
+      .toFixed(2)
+      .padStart(10)} ${parseFloat(totalPrice).toFixed(2).padStart()}\n\n`;
+
+    receiptData += "--------- Advancements --------\n";
+    receiptData += "Type    Amount/Item   Weight(Kg)\n";
+    advancements.forEach((adv) => {
+      if (adv.type === "cash") {
+        receiptData += `Cash     ${parseFloat(adv.amount)
+          .toFixed(2)
+          .padStart(9)}      -\n`;
+      } else {
+        receiptData += `Barter   ${adv.item.label.padEnd(9)} ${parseFloat(
+          adv.weight
+        )
+          .toFixed(2)
+          .padStart(9)}\n`;
+      }
     });
     receiptData += "\n";
-    receiptData += `Total:       ${totalQuantity
-      .toString()
-      .padStart(2)} ${totalWeight.toString().padStart(9)} ${totalPrice
-      .toString()
-      .padStart(6)}\n`;
-    receiptData += `Total Advanced: ${totalAdvanced.toFixed(2)}\n`;
-    receiptData += `Remaining: ${(totalPrice - totalAdvanced).toFixed(2)}\n`;
-    receiptData += "\n";
-    receiptData += `Served by: ${server}\n`;
-    receiptData += "Thank you for your business!\n";
-    receiptData += "\n\n\n\n";
+    receiptData += `Total Advanced: Ksh ${parseFloat(totalAdvanced)
+      .toFixed(2)}\n`;
+    receiptData += `Net Pay: Ksh ${(
+      parseFloat(totalPrice) - parseFloat(totalAdvanced)
+    )
+      .toFixed(2)}\n\n`;
 
-    console.log(receiptData);
+    receiptData += `Served by: ${server}\n\n`;
+    receiptData += "Thank you for your business!\n";
+    receiptData += "===========================\n";
+    receiptData += "\n\n\n"; // Extra lines for printer feed
+
+    console.log(receiptData); // For debugging
 
     const printer = store.getState().settings.printerAddress;
     writeToDevice(printer, receiptData, "ascii");
     console.log("Receipt sent to the printer");
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setProducts([]);
-    connectToDevice(store.getState().settings.scaleAddress);
-  };
-
-  useEffect(() => {
-    const newTotalQuantity = products.reduce(
-      (acc, item) => acc + parseInt(item.quantity),
-      0
-    );
-    const newTotalWeight = products.reduce(
-      (acc, item) => acc + parseFloat(item.weight),
-      0
-    );
-    const newTotalPrice = newTotalWeight * product.price;
-    setTotalQuantity(newTotalQuantity);
-    setTotalWeight(newTotalWeight.toFixed(2));
-    setTotalPrice(newTotalPrice.toFixed(2));
-  }, [products]);
-
   const handleSaveRecord = async () => {
     setLoading(true);
-    if (location === null) {
-      ToastAndroid.show(
-        "Please go back and select a location",
-        ToastAndroid.SHORT
-      );
+    if (!location || !product || !selectedSupplier || products.length === 0) {
+      ToastAndroid.show("Please fill all required fields", ToastAndroid.SHORT);
       setLoading(false);
       return;
     }
-    if (product === null) {
-      ToastAndroid.show(
-        "Please go back and select a product",
-        ToastAndroid.SHORT
-      );
-      setLoading(false);
-      return;
-    }
-    if (selectedSupplier === null) {
-      ToastAndroid.show("Please select a supplier", ToastAndroid.SHORT);
-      setLoading(false);
-      return;
-    }
-    if (products.length === 0) {
-      ToastAndroid.show(
-        "Please capture at least one product",
-        ToastAndroid.SHORT
-      );
-      setLoading(false);
-      return;
-    }
-    try {
-      const businessId = store.getState().settings.BusinessId;
-      console.log("Business ID:", businessId);
 
+    try {
       const newRecord = {
-        supplier: fieldCollectionData.supplier,
-        businessId: businessId,
-        clerk: fieldCollectionData.clerk,
-        location: fieldCollectionData.location,
-        timestamp: fieldCollectionData.timestamp,
+        ...fieldCollectionData,
         products,
         quantity: totalQuantity,
         weight: totalWeight,
         advancements,
         totalAdvanced,
+        totalPrice: totalPrice,
+        remainingBalance: totalPrice - totalAdvanced,
       };
+
+      console.log("New Record:", newRecord);
 
       const networkState = await Network.getNetworkStateAsync();
       if (networkState.isConnected) {
         const fieldCollectionsRef = collection(
           db,
-          `Businesses/${businessId}/FieldCollections`
+          `Businesses/${BusinessId}/FieldCollections`
         );
         const docRef = await addDoc(fieldCollectionsRef, newRecord);
         console.log("Record saved successfully:", docRef.id);
@@ -309,53 +280,6 @@ const RecordPage = ({ route, navigation }) => {
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkNetworkAndUpload = async () => {
-      if (!isMounted) return;
-
-      try {
-        const networkState = await Network.getNetworkStateAsync();
-        if (networkState.isConnected && collections.length > 0) {
-          const uploadedRecords = [];
-          for (const record of collections) {
-            try {
-              const fieldCollectionsRef = collection(
-                db,
-                `Businesses/${record.businessId}/FieldCollections`
-              );
-              await addDoc(fieldCollectionsRef, record);
-              uploadedRecords.push(record);
-            } catch (error) {
-              console.error("Error uploading record:", error);
-            }
-          }
-          dispatch(
-            setCollections(
-              collections.filter((record) => !uploadedRecords.includes(record))
-            )
-          );
-          console.log(`${uploadedRecords.length} records uploaded to database`);
-        }
-      } catch (error) {
-        console.error("Error checking network or uploading:", error);
-      }
-    };
-
-    const intervalId = setInterval(checkNetworkAndUpload, 10000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, [collections]);
-
-  // Advancements functions
-  const openAdvancementModal = () => {
-    bottomSheetModalRef.current?.present();
-  };
-
   const handleAdvancement = () => {
     if (advanceType === "cash") {
       if (isNaN(parseFloat(advanceAmount)) || parseFloat(advanceAmount) <= 0) {
@@ -366,9 +290,7 @@ const RecordPage = ({ route, navigation }) => {
       setAdvancements([...advancements, newAdvance]);
     } else {
       if (
-        !barterItem ||
-        isNaN(parseFloat(barterQuantity)) ||
-        parseFloat(barterQuantity) <= 0
+        !barterItem
       ) {
         ToastAndroid.show(
           "Please enter valid barter details",
@@ -379,270 +301,276 @@ const RecordPage = ({ route, navigation }) => {
       const newAdvance = {
         type: "barter",
         item: barterItem,
-        quantity: parseFloat(barterQuantity),
+        weight: parseFloat(receivedData.toString().match(/[+-]?\d*\.?\d+/g)?.join(", ")),
       };
       setAdvancements([...advancements, newAdvance]);
     }
 
     bottomSheetModalRef.current?.dismiss();
     setAdvanceAmount("");
-    setBarterItem("");
-    setBarterQuantity("");
+    setBarterItem(null);
+    setBarterWeight("");
   };
 
-  useEffect(() => {
-    const newTotalAdvanced = advancements.reduce((sum, adv) => {
-      if (adv.type === "cash") {
-        return sum + parseFloat(adv.amount);
-      } else {
-        const barterProduct = barterProducts.find((bp) => bp.name === adv.item);
-        return sum + parseFloat(adv.quantity) * barterProduct.price;
-      }
-    }, 0);
-    setTotalAdvanced(newTotalAdvanced);
-  }, [advancements]);
-
   return (
-      <View style={styles.Container}>
-        <Header refresh={refreshing} handleClick={onRefresh} />
-        <DropdownComponent
-          title="Suppliers"
-          onChange={(value) => {
-            console.log(value);
-            setSelectedSupplier(value);
-          }}
-          data={supplierData}
-        />
+    <View style={styles.container}>
+      <Header refresh={refreshing} handleClick={onRefresh} />
+      <DropdownComponent
+        title="Suppliers"
+        onChange={setSelectedSupplier}
+        data={supplierData}
+      />
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={closeModal}
-        >
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <View style={styles.modalNav}>
-                <View style={styles.modaltouchable}>
-                  <Text style={styles.touchableText}>Print Receipt</Text>
-                </View>
-              </View>
-              <View style={styles.modalContent}>
-                <TouchableOpacity
-                  style={styles.Button}
-                  onPress={() => {
-                    const printer = store.getState().settings.printerAddress;
-                    if (!printer) {
-                      ToastAndroid.show(
-                        "Please go to settings to connect Printer",
-                        ToastAndroid.SHORT
-                      );
-                      return;
-                    }
-                    handleSwitchBt();
-                  }}
-                >
-                  <AntDesign name="printer" size={34} color="blue" />
-                  <Text style={styles.textButton}>Reconnect printer</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.Button}
-                  onPress={showPrinterReceipt}
-                >
-                  <Text style={styles.textButton}>Print</Text>
-                </TouchableOpacity>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <View style={styles.modalNav}>
+              <View style={styles.modaltouchable}>
+                <Text style={styles.touchableText}>Print Receipt</Text>
               </View>
             </View>
+            <View style={styles.modalContent}>
+              <TouchableOpacity style={styles.button} onPress={handleSwitchBt}>
+                <AntDesign name="printer" size={34} color="blue" />
+                <Text style={styles.textButton}>Reconnect printer</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={showPrinterReceipt}
+              >
+                <Text style={styles.textButton}>Print</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </Modal>
-        <View
-          style={[
-            styles.display,
+        </View>
+      </Modal>
+
+      <View style={[styles.display, { backgroundColor: "green" }]}>
+        <View style={styles.data}>
+          <Text style={styles.textBold}>Scale Connected:</Text>
+          <Text style={styles.textRegular}>
+            {isConnected
+              ? `${connectedDevice.name} (${connectedDevice.address})`
+              : "Scale Not Connected"}
+          </Text>
+          <Text style={styles.textBold}>Scale Stability:</Text>
+          <Text style={styles.textRegular}>
+            {parseBluetoothData(receivedData).isStable ? "Stable" : "Unstable"}
+          </Text>
+        </View>
+        <View>
+          <Text style={styles.textWeight}>
+            {(receivedData || "")
+              .toString()
+              .match(/[+-]?\d*\.?\d+/g)
+              ?.join(", ")}
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => {
+          setProducts([
+            ...products,
             {
-              backgroundColor:
-                receivedData.split(",")[0] === "ST" ? "green" : "red",
+              ...product,
+              quantity: 1,
+              weight: parseFloat(
+                (receivedData || "0.00")
+                  .toString()
+                  .match(/[+-]?\d*\.?\d+/g)
+                  ?.join(", ")
+              ),
             },
-          ]}
-        >
-          <View style={styles.data}>
-            <Text style={styles.textBold}>Scale Connected:</Text>
-            <Text style={styles.textRegular}>
-              {isConnected
-                ? `${connectedDevice.name} (${connectedDevice.address})`
-                : "Scale Not Connected"}
-            </Text>
-            <Text style={styles.textBold}>Scale Stability:</Text>
-            <Text style={[styles.textRegular]}>
-              {parseBluetoothData(receivedData).isStable
-                ? "Stable"
-                : "Unstable"}
-            </Text>
-          </View>
-          <View>
-            <Text style={styles.textWeight}>
-              {(receivedData || "")
-                .toString()
-                .match(/[+-]?\d*\.?\d+/g)
-                ?.join(", ")}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.Button}
-          onPress={() => {
-            setProducts([
-              ...products,
-              {
-                ...product,
-                quantity: 1,
-                weight: parseFloat(
-                  (receivedData || "0.00")
-                    .toString()
-                    .match(/[+-]?\d*\.?\d+/g)
-                    ?.join(", ")
-                ),
-              },
-            ]);
-          }}
-        >
-          <Text style={styles.textButton}>Capture</Text>
-        </TouchableOpacity>
-        <View style={styles.preview}>
-          <Text style={styles.textButton}>Records</Text>
-          <ScrollView style={styles.scroll}>
-            <View style={styles.table}>
-              <View style={styles.tableRow}>
-                <Text style={styles.tableHeader}>Item</Text>
-                <Text style={styles.tableHeader}>Quantity</Text>
-                <Text style={styles.tableHeader}>Weight</Text>
-              </View>
-              {products.map((item, index) => (
-                <View style={styles.tableRow} key={index}>
-                  <Text style={styles.tableCell}>{item.label}</Text>
-                  <Text style={styles.tableCell}>{item.quantity}</Text>
-                  <Text style={styles.tableCell}>{item.weight}</Text>
-                </View>
-              ))}
-              <View style={styles.totalRow}>
-                <Text style={styles.tableCell}>Total</Text>
-                <Text style={styles.tableCell}>{totalQuantity}</Text>
-                <Text style={styles.tableCell}>{totalWeight}</Text>
-              </View>
+          ]);
+        }}
+      >
+        <Text style={styles.textButton}>Capture</Text>
+      </TouchableOpacity>
+
+      <View style={styles.preview}>
+        <Text style={styles.textButton}>Records</Text>
+        <ScrollView style={styles.scroll}>
+          <View style={styles.table}>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableHeader}>Item</Text>
+              <Text style={styles.tableHeader}>Quantity</Text>
+              <Text style={styles.tableHeader}>Weight</Text>
             </View>
-          </ScrollView>
-        </View>
-
-        <TouchableOpacity style={styles.Button} onPress={openAdvancementModal}>
-          <Text style={styles.textButton}>Add Advancement</Text>
-        </TouchableOpacity>
-
-        <View style={styles.advancementSummary}>
-          <Text style={styles.summaryText}>
-            Total Price: {totalPrice.toFixed(2)}
-          </Text>
-          <Text style={styles.summaryText}>
-            Total Advanced: {totalAdvanced.toFixed(2)}
-          </Text>
-          <Text style={styles.summaryText}>
-            Remaining: {(totalPrice - totalAdvanced).toFixed(2)}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.Button}
-          onPress={() => handleSaveRecord()}
-        >
-          {loading ? (
-            <ActivityIndicator color="#00FF00" />
-          ) : (
-            <Text style={styles.textButton}>Save Record</Text>
-          )}
-        </TouchableOpacity>
-
-        <BottomSheetModal
-          ref={bottomSheetModalRef}
-          index={0}
-          snapPoints={["50%", "75%"]}
-        >
-          <View style={styles.bottomSheetContent}>
-            <Text style={styles.modalTitle}>Add Advancement</Text>
-
-            <View style={styles.advanceTypeSelection}>
-              <TouchableOpacity
-                style={[
-                  styles.advanceTypeButton,
-                  advanceType === "cash" && styles.selectedAdvanceType,
-                ]}
-                onPress={() => setAdvanceType("cash")}
-              >
-                <Text>Cash</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.advanceTypeButton,
-                  advanceType === "barter" && styles.selectedAdvanceType,
-                ]}
-                onPress={() => setAdvanceType("barter")}
-              >
-                <Text>Dukawala (Barter)</Text>
-              </TouchableOpacity>
+            {products.map((item, index) => (
+              <View style={styles.tableRow} key={index}>
+                <Text style={styles.tableCell}>{item.label}</Text>
+                <Text style={styles.tableCell}>{item.quantity}</Text>
+                <Text style={styles.tableCell}>{item.weight}</Text>
+              </View>
+            ))}
+            <View style={styles.totalRow}>
+              <Text style={styles.tableCell}>Total</Text>
+              <Text style={styles.tableCell}>{totalQuantity}</Text>
+              <Text style={styles.tableCell}>{totalWeight}</Text>
             </View>
+            <Text style={styles.tableHeader}>Advancements</Text>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableHeader}>Type</Text>
+              <Text style={styles.tableHeader}>Amount</Text>
+              <Text style={styles.tableHeader}>Price</Text>
+            </View>
+            {advancements.map((adv, index) => (
+              <View style={styles.tableRow} key={index}>
+                <Text style={styles.tableCell}>
+                  {adv.type === "cash" ? "Cash" : adv.item.label}
+                </Text>
+                <Text style={styles.tableCell}>
+                  {adv.type === "cash" ? adv.amount : adv.weight}
+                </Text>
+                <Text style={styles.tableCell}>
+                  {adv.type === "cash" ? "" : adv.item.price}
+                </Text>
+              </View>
+            ))}
 
-            {advanceType === "cash" ? (
-              <TextInput
-                style={styles.input}
-                placeholder="Enter cash amount"
-                value={advanceAmount}
-                onChangeText={setAdvanceAmount}
-                keyboardType="numeric"
-              />
-            ) : (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter barter item"
-                  value={barterItem}
-                  onChangeText={setBarterItem}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter quantity"
-                  value={barterQuantity}
-                  onChangeText={setBarterQuantity}
-                  keyboardType="numeric"
-                />
-              </>
-            )}
+            <View style={styles.totalRow}>
+              <Text style={styles.tableCell}>Total</Text>
+              <Text style={styles.tableCell}></Text>
+              <Text style={styles.tableCell}>{totalAdvanced.toFixed(2)}</Text>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => bottomSheetModalRef.current?.present()}
+      >
+        <Text style={styles.textButton}>Add Advancement</Text>
+      </TouchableOpacity>
+
+      <View style={styles.advancementSummary}>
+        <Text style={styles.summaryText}>Total Price: {totalPrice}</Text>
+        <Text style={styles.summaryText}>
+          Total Advanced: {totalAdvanced.toFixed(2)}
+        </Text>
+        <Text style={styles.summaryText}>
+          Remaining: {(totalPrice - totalAdvanced).toFixed(2)}
+        </Text>
+      </View>
+
+      <TouchableOpacity style={styles.button} onPress={handleSaveRecord}>
+        {loading ? (
+          <ActivityIndicator color="#00FF00" />
+        ) : (
+          <Text style={styles.textButton}>Save Record</Text>
+        )}
+      </TouchableOpacity>
+
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        index={0}
+        snapPoints={["50%", "75%"]}
+      >
+        <View style={styles.bottomSheetContent}>
+          <Text style={styles.modalTitle}>Add Advancement</Text>
+
+          <View style={styles.advanceTypeSelection}>
             <TouchableOpacity
-              style={styles.advanceButton}
-              onPress={handleAdvancement}
+              style={[
+                styles.advanceTypeButton,
+                advanceType === "cash" && styles.selectedAdvanceType,
+              ]}
+              onPress={() => setAdvanceType("cash")}
             >
-              <Text style={styles.advanceButtonText}>Confirm Advancement</Text>
+              <Text>Cash</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.advanceTypeButton,
+                advanceType === "barter" && styles.selectedAdvanceType,
+              ]}
+              onPress={() => setAdvanceType("barter")}
+            >
+              <Text>Dukawala (Barter)</Text>
             </TouchableOpacity>
           </View>
-        </BottomSheetModal>
-      </View>
+
+          {advanceType === "cash" ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Enter cash amount"
+              value={advanceAmount}
+              onChangeText={setAdvanceAmount}
+              keyboardType="numeric"
+            />
+          ) : (
+            <>
+              <DropdownComponent
+                title="Select item"
+                data={productsData}
+                onChange={setBarterItem}
+              />
+              <View style={styles.advanceTypeSelection}>
+                <Text
+                  style={{
+                    marginRight: 10,
+                    fontFamily: "Poppins-Regular",
+                    fontSize: 16,
+                  }}
+                >
+                  Weight:
+                </Text>
+                <Text
+                  style={{
+                    marginRight: 10,
+                    fontFamily: "Poppins-Regular",
+                    fontSize: 16,
+                  }}
+                >
+                  {receivedData &&
+                    parseFloat(
+                      receivedData
+                        .toString()
+                        .match(/[+-]?\d*\.?\d+/g)
+                        ?.join(", ")
+                    )}{" "}
+                  Kg
+                </Text>
+              </View>
+            </>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={handleAdvancement}>
+            <Text style={styles.advanceButtonText}>Add Advancement</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheetModal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  Container: {
+  container: {
+    flex: 1,
     alignItems: "center",
-    padding: 50,
+    paddingTop: 10,
     backgroundColor: "#F9F9F9",
-    width: screenWidth,
-    height: screenHeight,
   },
   display: {
     height: 100,
-    backgroundColor: "#2BFF2B",
     width: screenWidth * 0.8,
     borderRadius: 10,
     flexDirection: "row",
     padding: 10,
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 10,
+  },
+  data: {
+    flex: 1,
   },
   centeredView: {
     flex: 1,
@@ -654,7 +582,8 @@ const styles = StyleSheet.create({
     margin: 20,
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 5,
+    padding: 35,
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -663,38 +592,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: screenWidth * 0.9,
   },
-  modalNav: {
-    flexDirection: "row",
-    padding: 5,
-    justifyContent: "space-between",
-  },
-  modaltouchable: {
-    alignItems: "center",
-    padding: 20,
-    borderBottomColor: "#2BFF2B",
-    borderBottomWidth: 2,
-    width: "100%",
-    flexDirection: "row",
-  },
-  touchableText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 20,
-    textAlign: "center",
-    fontWeight: "400",
-  },
-  modalContent: {
-    alignItems: "center",
-    padding: 10,
-  },
-  Button: {
+  button: {
     width: screenWidth * 0.8,
     backgroundColor: "#F2F2F2",
     padding: 15,
     alignItems: "center",
     margin: 10,
     borderRadius: 20,
+  },
+  textButton: {
+    fontFamily: "Poppins-Regular",
+    fontSize: 16,
   },
   preview: {
     height: 200,
@@ -703,17 +612,15 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.8,
     alignItems: "center",
     padding: 10,
+    marginVertical: 10,
   },
   scroll: {
     backgroundColor: "white",
-    height: 300,
-    width: screenWidth * 0.7,
+    width: "100%",
     borderRadius: 10,
   },
   table: {
-    margin: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    width: "100%",
   },
   tableRow: {
     flexDirection: "row",
@@ -726,41 +633,44 @@ const styles = StyleSheet.create({
     backgroundColor: "#f1f1f1",
     fontWeight: "bold",
     textAlign: "center",
-    fontFamily: "Poppins-Bold",
   },
   tableCell: {
     flex: 1,
     padding: 10,
     textAlign: "center",
   },
+  totalRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#f9f9f9",
+  },
   textBold: {
     fontFamily: "Poppins-Bold",
-    color: "white",
     fontSize: 14,
-    fontWeight: "700",
+    color: "white",
   },
   textRegular: {
     fontFamily: "Poppins-Regular",
+    fontSize: 14,
     color: "white",
   },
   textWeight: {
     fontFamily: "Poppins-Regular",
-    fontSize: 18,
-    textAlign: "center",
-    alignSelf: "center",
-    color: "black",
+    fontSize: 24,
+    color: "white",
   },
-  textButton: {
+  advancementSummary: {
+    width: screenWidth * 0.8,
+    backgroundColor: "#F2F2F2",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  summaryText: {
     fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    fontWeight: "400",
-  },
-  totalRow: {
-    flexDirection: "row",
-    padding: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-    backgroundColor: "#f0f0f0",
+    fontSize: 16,
+    marginBottom: 5,
   },
   bottomSheetContent: {
     flex: 1,
@@ -793,27 +703,9 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-  advanceButton: {
-    backgroundColor: "#2BFF2B",
-    padding: 15,
-    borderRadius: 5,
-    marginTop: 20,
-  },
   advanceButtonText: {
     color: "#000000",
     fontWeight: "bold",
-  },
-  advancementSummary: {
-    width: screenWidth * 0.8,
-    backgroundColor: "#F2F2F2",
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
-  },
-  summaryText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 16,
-    marginBottom: 5,
   },
 });
 

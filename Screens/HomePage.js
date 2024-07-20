@@ -71,6 +71,7 @@ const HomePage = () => {
       // Setting the products data for the dropdown component
       setProductsData(
         mergedProducts.map((product) => ({
+          isDukawala: product.isDukawala,
           price: product.price,
           label: product.name,
           value: product.id,
@@ -224,6 +225,7 @@ const HomePage = () => {
 
     // Navigating to the RecordPage screen with selected product and location
     navigation.navigate("RecordPage", {
+      productsData: productsData,
       product: selectedProduct,
       location: selectedLocation,
     });
@@ -254,7 +256,6 @@ const HomePage = () => {
           <DropdownComponent
             title={"Products"}
             onChange={(value) => {
-              console.log(value.label);
               setSelectedProduct(value); // Setting the selected product state
             }}
             data={productsData} // Providing products data to the dropdown component

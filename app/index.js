@@ -6,6 +6,7 @@ import { Provider } from "react-redux";
 import { store, persistor } from "../store/store";
 import { PersistGate } from "redux-persist/integration/react";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 
 export default function Root() {
@@ -24,6 +25,7 @@ export default function Root() {
     }
 
     return(
+        <GestureHandlerRootView>
         <BluetoothProvider>
             <BottomSheetModalProvider>
             <Provider store={store}>
@@ -33,5 +35,6 @@ export default function Root() {
             </Provider>
             </BottomSheetModalProvider>
         </BluetoothProvider>
+        </GestureHandlerRootView>
     );    
 }
