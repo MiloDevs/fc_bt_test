@@ -1,18 +1,32 @@
-import * as Network from 'expo-network';
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, ToastAndroid } from 'react-native';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import DropdownComponent from '../Components/DropDown';
-import Header from '../Components/Header';
+import * as Network from "expo-network";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  ToastAndroid,
+} from "react-native";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import DropdownComponent from "../Components/DropDown";
+import Header from "../Components/Header";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { useBluetooth } from 'rn-bluetooth-classic';
-import { addDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from '../Database/config';
-import { store } from '../store/store';
-import { useDispatch, useSelector } from 'react-redux';
+import { useBluetooth } from "rn-bluetooth-classic";
+import { addDoc, collection, getDocs } from "firebase/firestore";
+import { db } from "../Database/config";
+import { store } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
 import { setSuppliers, setCollections } from "../store";
-import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetModalProvider,
+} from "@gorhom/bottom-sheet";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const RecordPage = ({ route, navigation }) => {
   const { location, product, productsData } = route.params;
@@ -78,7 +92,7 @@ const RecordPage = ({ route, navigation }) => {
   useEffect(() => {
     getSuppliers();
   }, []);
-  
+
   useEffect(() => {
     const newTotalQuantity = products.reduce(
       (acc, item) => acc + parseInt(item.quantity),
@@ -212,12 +226,12 @@ const RecordPage = ({ route, navigation }) => {
       }
     });
     receiptData += "\n";
-    receiptData += `Total Advanced: Ksh ${parseFloat(totalAdvanced)
-      .toFixed(2)}\n`;
+    receiptData += `Total Advanced: Ksh ${parseFloat(totalAdvanced).toFixed(
+      2
+    )}\n`;
     receiptData += `Net Pay: Ksh ${(
       parseFloat(totalPrice) - parseFloat(totalAdvanced)
-    )
-      .toFixed(2)}\n\n`;
+    ).toFixed(2)}\n\n`;
 
     receiptData += `Served by: ${server}\n\n`;
     receiptData += "Thank you for your business!\n";
@@ -289,9 +303,7 @@ const RecordPage = ({ route, navigation }) => {
       const newAdvance = { type: "cash", amount: parseFloat(advanceAmount) };
       setAdvancements([...advancements, newAdvance]);
     } else {
-      if (
-        !barterItem
-      ) {
+      if (!barterItem) {
         ToastAndroid.show(
           "Please enter valid barter details",
           ToastAndroid.SHORT
@@ -301,7 +313,12 @@ const RecordPage = ({ route, navigation }) => {
       const newAdvance = {
         type: "barter",
         item: barterItem,
-        weight: parseFloat(receivedData.toString().match(/[+-]?\d*\.?\d+/g)?.join(", ")),
+        weight: parseFloat(
+          receivedData
+            .toString()
+            .match(/[+-]?\d*\.?\d+/g)
+            ?.join(", ")
+        ),
       };
       setAdvancements([...advancements, newAdvance]);
     }
@@ -335,7 +352,10 @@ const RecordPage = ({ route, navigation }) => {
               </View>
             </View>
             <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.button} onPress={handleSwitchBt}>
+              <TouchableOpacity
+                style={[, styles.button, { borderRadius: 20 }]}
+                onPress={handleSwitchBt}
+              >
                 <AntDesign name="printer" size={34} color="blue" />
                 <Text style={styles.textButton}>Reconnect printer</Text>
               </TouchableOpacity>
@@ -350,13 +370,20 @@ const RecordPage = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      <View style={[styles.display, { backgroundColor: "green" }]}>
+      <View
+        style={[
+          styles.display,
+          {
+            backgroundColor: parseBluetoothData(receivedData).isStable
+              ? "green"
+              : "red",
+          },
+        ]}
+      >
         <View style={styles.data}>
-          <Text style={styles.textBold}>Scale Connected:</Text>
+          <Text style={styles.textBold}>Connected Device:</Text>
           <Text style={styles.textRegular}>
-            {isConnected
-              ? `${connectedDevice.name} (${connectedDevice.address})`
-              : "Scale Not Connected"}
+            {receivedData ? "Connected" : "Disconnected"}
           </Text>
           <Text style={styles.textBold}>Scale Stability:</Text>
           <Text style={styles.textRegular}>
@@ -365,10 +392,11 @@ const RecordPage = ({ route, navigation }) => {
         </View>
         <View>
           <Text style={styles.textWeight}>
-            {(receivedData || "")
+            {(receivedData || "0.00")
               .toString()
               .match(/[+-]?\d*\.?\d+/g)
-              ?.join(", ")}
+              ?.join(", ")}{" "}
+            Kg
           </Text>
         </View>
       </View>
@@ -451,11 +479,16 @@ const RecordPage = ({ route, navigation }) => {
         </ScrollView>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSaveRecord}>
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: loading ? "#ccc" : "green" }]}
+        onPress={handleSaveRecord}
+      >
         {loading ? (
           <ActivityIndicator color="#00FF00" />
         ) : (
-          <Text style={styles.textButton}>Save Record</Text>
+          <Text style={[styles.textButton, { color: "#fff" }]}>
+            Save Record
+          </Text>
         )}
       </TouchableOpacity>
 
@@ -573,6 +606,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 20,
     padding: 35,
+    width: screenWidth * 0.9,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -589,7 +623,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     margin: 10,
-    borderRadius: 20,
+    borderRadius: 50,
   },
   textButton: {
     fontFamily: "Poppins-Regular",
