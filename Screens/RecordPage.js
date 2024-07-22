@@ -394,10 +394,17 @@ const RecordPage = ({ route, navigation }) => {
         <Text style={styles.textButton}>Capture</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => bottomSheetModalRef.current?.present()}
+      >
+        <Text style={styles.textButton}>Add Advancement</Text>
+      </TouchableOpacity>
+
       <View style={styles.preview}>
-        <Text style={styles.textButton}>Records</Text>
         <ScrollView style={styles.scroll}>
           <View style={styles.table}>
+            <Text style={styles.tableHeader}>Records</Text>
             <View style={styles.tableRow}>
               <Text style={styles.tableHeader}>Item</Text>
               <Text style={styles.tableHeader}>Quantity</Text>
@@ -442,23 +449,6 @@ const RecordPage = ({ route, navigation }) => {
             </View>
           </View>
         </ScrollView>
-      </View>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => bottomSheetModalRef.current?.present()}
-      >
-        <Text style={styles.textButton}>Add Advancement</Text>
-      </TouchableOpacity>
-
-      <View style={styles.advancementSummary}>
-        <Text style={styles.summaryText}>Total Price: {totalPrice}</Text>
-        <Text style={styles.summaryText}>
-          Total Advanced: {totalAdvanced.toFixed(2)}
-        </Text>
-        <Text style={styles.summaryText}>
-          Remaining: {(totalPrice - totalAdvanced).toFixed(2)}
-        </Text>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSaveRecord}>
@@ -561,7 +551,7 @@ const styles = StyleSheet.create({
   },
   display: {
     height: 100,
-    width: screenWidth * 0.8,
+    width: screenWidth * 0.9,
     borderRadius: 10,
     flexDirection: "row",
     padding: 10,
@@ -594,9 +584,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   button: {
-    width: screenWidth * 0.8,
+    width: screenWidth * 0.9,
     backgroundColor: "#F2F2F2",
-    padding: 15,
+    paddingVertical: 12,
     alignItems: "center",
     margin: 10,
     borderRadius: 20,
@@ -609,9 +599,11 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: "#F2F2F2",
     borderRadius: 10,
-    width: screenWidth * 0.8,
+    flex: 1,
+    width: screenWidth * 0.9,
     alignItems: "center",
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
     marginVertical: 10,
   },
   scroll: {
