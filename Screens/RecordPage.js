@@ -459,11 +459,8 @@ console.log(decodedString);
               ...product,
               quantity: 1,
               weight: parseFloat(
-                (receivedData || "0.00")
-                  .toString()
-                  .match(/[+-]?\d*\.?\d+/g)
-                  ?.join(", ")
-              ),
+                atob(receivedData).match(/\d+(\.\d+)?/)[0]
+              ).toFixed(2)
             },
           ]);
         }}
@@ -473,12 +470,12 @@ console.log(decodedString);
 
   
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.button}
         onPress={() => bottomSheetModalRef.current?.present()}
       >
         <Text style={styles.textButton}>Add Advancement</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <View style={styles.preview}>
         <ScrollView style={styles.scroll}>
