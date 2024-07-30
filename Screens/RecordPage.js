@@ -25,6 +25,7 @@ import {
   BottomSheetModal,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
+import RNBluetooth from "react-native-bluetooth-classic";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -56,6 +57,14 @@ const RecordPage = ({ route, navigation }) => {
 
   const bottomSheetModalRef = useRef(null);
 
+  const parsedData = useMemo(() => {
+    let data = "";
+    if (receivedData) {
+      data = atob(receivedData).match(/\d+(\.\d+)?/)[0]
+    }
+    return data
+  }, [receivedData])
+
   const {
     devices,
     connectToDevice,
@@ -63,6 +72,7 @@ const RecordPage = ({ route, navigation }) => {
     isConnected,
     disconnectDevice,
     writeToDevice,
+    readFromDevice,
   } = useBluetooth();
 
   const fieldCollectionData = useMemo(
@@ -146,6 +156,43 @@ const RecordPage = ({ route, navigation }) => {
         value: supplier.id,
       }))
     : [];
+
+    const getWeight = async () => {
+      if (receivedData) {
+        return parseFloat(
+          receivedData
+            .toString()
+            .match(/[+-]?\d*\.?\d+/g)
+            ?.join(", ")
+        );
+      } else if (true) {
+        try {
+          const jdy = store.getState().settings.scaleAddress
+          console.log("Jdy: ", jdy)
+          const scale = await RNBluetooth.connectToDevice(jdy, {
+            charset: 'binary'
+          }).then((scale) => {
+            scale.read();
+          }).catch((error) => {
+            console.log("Error: ", error)
+          })
+          console.log("Scale: ", scale)
+          const data = await readFromDevice(jdy);
+          console.log("Data: ", data);
+          const parsedData = parseBluetoothData(data);
+        } catch (error) {
+          console.error("Error reading from device:", error);
+          console.log("Error: ", error)
+          ToastAndroid.show("Error reading from device", ToastAndroid.SHORT);
+          return null;
+        }
+      } else {
+        ToastAndroid.show("No device connected", ToastAndroid.SHORT);
+        return null;
+      }
+    };
+
+  
 
   const parseBluetoothData = (data) => {
     const regex = /(?:(US|ST),GS,)(\+\d+\.\d+kg)/g;
@@ -329,6 +376,12 @@ const RecordPage = ({ route, navigation }) => {
     setBarterWeight("");
   };
 
+  useEffect(() => {
+    let encodedString = "AkQgIC0wLjMz9Q0=";
+let decodedString = atob(encodedString);
+console.log(decodedString);
+  }, [receivedData]);
+
   return (
     <View style={styles.container}>
       <Header refresh={refreshing} handleClick={onRefresh} />
@@ -392,11 +445,7 @@ const RecordPage = ({ route, navigation }) => {
         </View>
         <View>
           <Text style={styles.textWeight}>
-            {(receivedData || "0.00")
-              .toString()
-              .match(/[+-]?\d*\.?\d+/g)
-              ?.join(", ")}{" "}
-            Kg
+            {receivedData ? atob(receivedData).match(/\d+(\.\d+)?/)[0] : "0.00"} Kg
           </Text>
         </View>
       </View>
@@ -421,6 +470,8 @@ const RecordPage = ({ route, navigation }) => {
       >
         <Text style={styles.textButton}>Capture</Text>
       </TouchableOpacity>
+
+  
 
       <TouchableOpacity
         style={styles.button}
