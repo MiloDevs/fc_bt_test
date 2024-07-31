@@ -72,7 +72,9 @@ const RecordPage = ({ route, navigation }) => {
   useEffect(() => {
     if (receivedData) {
       const parsedData = parseBluetoothData(receivedData);
-      setScaleData(parsedData);
+      if (JSON.stringify(parsedData) !== JSON.stringify(scaleData)) {
+        setScaleData(parsedData);
+      }
     }
   }, [receivedData]);
 
@@ -202,7 +204,8 @@ const RecordPage = ({ route, navigation }) => {
         isStable: false
       };
     };
-  
+
+ 
 
   const handleSwitchBt = async () => {
     const printer = store.getState().settings.printerAddress;
@@ -350,12 +353,7 @@ const RecordPage = ({ route, navigation }) => {
       const newAdvance = {
         type: "barter",
         item: barterItem,
-        weight: parseFloat(
-          receivedData
-            .toString()
-            .match(/[+-]?\d*\.?\d+/g)
-            ?.join(", ")
-        ),
+        weight: parseFloat(scaleData.reading || "0.00 Kg"),
       };
       setAdvancements([...advancements, newAdvance]);
     }
@@ -438,34 +436,6 @@ console.log(decodedString);
             </View>
           </View>
 
-
-      {/* <View
-        style={[
-          styles.display,
-          {
-            backgroundColor: parseBluetoothData(receivedData).isStable
-              ? "green"
-              : "red",
-          },
-        ]}
-      >
-        <View style={styles.data}>
-          <Text style={styles.textBold}>Connected Device:</Text>
-          <Text style={styles.textRegular}>
-            {receivedData ? "Connected" : "Disconnected"}
-          </Text>
-          <Text style={styles.textBold}>Scale Stability:</Text>
-          <Text style={styles.textRegular}>
-            {parseBluetoothData(receivedData).isStable ? "Stable" : "Unstable"}
-          </Text>
-        </View>
-        <View>
-          <Text style={styles.textWeight}>
-            {receivedData ? atob(receivedData).match(/\d+(\.\d+)?/)[0] : "0.00"} Kg
-          </Text>
-        </View>
-      </View> */}
-
       <TouchableOpacity
         style={styles.button}
         onPress={() => {
@@ -486,25 +456,7 @@ console.log(decodedString);
         <Text style={styles.textButton}>Capture</Text>
       </TouchableOpacity>
 
-      {/* <TouchableOpacity
-        style={styles.button}
-        onPress={() => {
-          setProducts([
-            ...products,
-            {
-              ...product,
-              quantity: 1,
-              weight: parseFloat(
-                atob(receivedData).match(/\d+(\.\d+)?/)[0]
-              ).toFixed(2)
-            },
-          ]);
-        }}
-      >
-        <Text style={styles.textButton}>Capture</Text>
-      </TouchableOpacity> */}
-
-  
+   
 
       <TouchableOpacity
         style={styles.button}
