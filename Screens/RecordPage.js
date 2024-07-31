@@ -57,14 +57,6 @@ const RecordPage = ({ route, navigation }) => {
 
   const bottomSheetModalRef = useRef(null);
 
-  const parsedData = useMemo(() => {
-    let data = "";
-    if (receivedData) {
-      data = atob(receivedData).match(/\d+(\.\d+)?/)[0]
-    }
-    return data
-  }, [receivedData])
-
   const {
     devices,
     connectToDevice,
@@ -74,6 +66,17 @@ const RecordPage = ({ route, navigation }) => {
     writeToDevice,
     readFromDevice,
   } = useBluetooth();
+
+  const [scaleData, setScaleData] = useState({ reading: null, isStable: false });
+
+  useEffect(() => {
+    if (receivedData) {
+      const parsedData = parseBluetoothData(receivedData);
+      setScaleData(parsedData);
+    }
+  }, [receivedData]);
+
+
 
   const fieldCollectionData = useMemo(
     () => ({
@@ -157,62 +160,49 @@ const RecordPage = ({ route, navigation }) => {
       }))
     : [];
 
-    const getWeight = async () => {
-      if (receivedData) {
-        return parseFloat(
-          receivedData
-            .toString()
-            .match(/[+-]?\d*\.?\d+/g)
-            ?.join(", ")
-        );
-      } else if (true) {
-        try {
-          const jdy = store.getState().settings.scaleAddress
-          console.log("Jdy: ", jdy)
-          const scale = await RNBluetooth.connectToDevice(jdy, {
-            charset: 'binary'
-          }).then((scale) => {
-            scale.read();
-          }).catch((error) => {
-            console.log("Error: ", error)
-          })
-          console.log("Scale: ", scale)
-          const data = await readFromDevice(jdy);
-          console.log("Data: ", data);
-          const parsedData = parseBluetoothData(data);
-        } catch (error) {
-          console.error("Error reading from device:", error);
-          console.log("Error: ", error)
-          ToastAndroid.show("Error reading from device", ToastAndroid.SHORT);
-          return null;
+
+    const parseBluetoothData = (data) => {
+      // First, try to parse with the ST/US format
+      const regex = /(?:(US|ST),GS,)(\+\d+\.\d+kg)/g;
+      let match;
+      let lastReading = null;
+      let isStable = false;
+    
+      while ((match = regex.exec(data)) !== null) {
+        const stability = match[1];
+        const reading = match[2];
+    
+        lastReading = reading;
+        isStable = (stability === 'ST');
+    
+        // We've found a match, so we can return immediately
+        return {
+          reading: lastReading,
+          isStable: isStable
+        };
+      }
+    
+      // If the first format doesn't match, try the base64 format
+      try {
+        const decodedData = atob(data);
+        const match = decodedData.match(/(\d+(\.\d+)?)/);
+        if (match) {
+          return {
+            reading: match[0] + 'kg',
+            isStable: true // Assuming 'D' is always stable
+          };
         }
-      } else {
-        ToastAndroid.show("No device connected", ToastAndroid.SHORT);
-        return null;
+      } catch (error) {
+        console.error("Error decoding base64 data:", error);
       }
+    
+      // If neither format matches, return null
+      return {
+        reading: null,
+        isStable: false
+      };
     };
-
   
-
-  const parseBluetoothData = (data) => {
-    const regex = /(?:(US|ST),GS,)(\+\d+\.\d+kg)/g;
-    let match;
-    let lastStableReading = null;
-
-    while ((match = regex.exec(data)) !== null) {
-      const stability = match[1];
-      const reading = match[2];
-
-      if (stability === "ST") {
-        lastStableReading = reading;
-      }
-    }
-
-    return {
-      reading: lastStableReading,
-      isStable: lastStableReading !== null,
-    };
-  };
 
   const handleSwitchBt = async () => {
     const printer = store.getState().settings.printerAddress;
@@ -423,7 +413,33 @@ console.log(decodedString);
         </View>
       </Modal>
 
-      <View
+          <View
+            style={[
+              styles.display,
+              {
+                backgroundColor: scaleData.isStable ? "green" : "red",
+              },
+            ]}
+          >
+            <View style={styles.data}>
+              <Text style={styles.textBold}>Connected Device:</Text>
+              <Text style={styles.textRegular}>
+                {receivedData ? "Connected" : "Disconnected"}
+              </Text>
+              <Text style={styles.textBold}>Scale Stability:</Text>
+              <Text style={styles.textRegular}>
+                {scaleData.isStable ? "Stable" : "Unstable"}
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.textWeight}>
+                {scaleData.reading || "0.00 Kg"}
+              </Text>
+            </View>
+          </View>
+
+
+      {/* <View
         style={[
           styles.display,
           {
@@ -448,9 +464,29 @@ console.log(decodedString);
             {receivedData ? atob(receivedData).match(/\d+(\.\d+)?/)[0] : "0.00"} Kg
           </Text>
         </View>
-      </View>
+      </View> */}
 
       <TouchableOpacity
+        style={styles.button}
+        onPress={() => {
+          if (scaleData.reading) {
+            setProducts([
+              ...products,
+              {
+                ...product,
+                quantity: 1,
+                weight: parseFloat(scaleData.reading),
+              },
+            ]);
+          } else {
+            ToastAndroid.show("No valid weight reading", ToastAndroid.SHORT);
+          }
+        }}
+      >
+        <Text style={styles.textButton}>Capture</Text>
+      </TouchableOpacity>
+
+      {/* <TouchableOpacity
         style={styles.button}
         onPress={() => {
           setProducts([
@@ -466,16 +502,16 @@ console.log(decodedString);
         }}
       >
         <Text style={styles.textButton}>Capture</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
   
 
-      {/* <TouchableOpacity
+      <TouchableOpacity
         style={styles.button}
         onPress={() => bottomSheetModalRef.current?.present()}
       >
         <Text style={styles.textButton}>Add Advancement</Text>
-      </TouchableOpacity> */}
+      </TouchableOpacity>
 
       <View style={styles.preview}>
         <ScrollView style={styles.scroll}>
